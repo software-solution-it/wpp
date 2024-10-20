@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WhatsAppProject")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+85aa91f5d47e51c65dd182b48191377f07e97a50")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3de9db48d2f077e8a96f461903386416923c4ca4")]
 [assembly: System.Reflection.AssemblyProductAttribute("WhatsAppProject")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WhatsAppProject")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

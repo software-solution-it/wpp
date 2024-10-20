@@ -1,6 +1,0 @@
-@WhatsAppProject_HostAddress = http://localhost:5167
-
-GET {{WhatsAppProject_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
