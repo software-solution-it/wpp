@@ -10436,11 +10436,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\gusta\\Videos\\Projetos\\WhatsAppProject\\WhatsAppProject.csproj",
+      "projectUniqueName": "C:\\Users\\gusta\\Videos\\Projetos\\wpp\\WhatsAppProject.csproj",
       "projectName": "WhatsAppProject",
-      "projectPath": "C:\\Users\\gusta\\Videos\\Projetos\\WhatsAppProject\\WhatsAppProject.csproj",
+      "projectPath": "C:\\Users\\gusta\\Videos\\Projetos\\wpp\\WhatsAppProject.csproj",
       "packagesPath": "C:\\Users\\gusta\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\gusta\\Videos\\Projetos\\WhatsAppProject\\obj\\",
+      "outputPath": "C:\\Users\\gusta\\Videos\\Projetos\\wpp\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

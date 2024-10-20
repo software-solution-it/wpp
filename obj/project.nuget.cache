@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "2tObuHXRHzQ=",
+  "dgSpecHash": "hK+cwZqDEMY=",
   "success": true,
-  "projectFilePath": "C:\\Users\\gusta\\Videos\\Projetos\\WhatsAppProject\\WhatsAppProject.csproj",
+  "projectFilePath": "C:\\Users\\gusta\\Videos\\Projetos\\wpp\\WhatsAppProject.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\gusta\\.nuget\\packages\\awssdk.core\\3.7.400.36\\awssdk.core.3.7.400.36.nupkg.sha512",
     "C:\\Users\\gusta\\.nuget\\packages\\awssdk.s3\\3.7.405\\awssdk.s3.3.7.405.nupkg.sha512",
