@@ -1,0 +1,86 @@
+[
+  {
+    "ContainingType": "WhatsAppProject.Controllers.WebhookController",
+    "Method": "Get",
+    "RelativePath": "Webhook",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "hub_mode",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "hub_challenge",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "hub_verify_token",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.WebhookController",
+    "Method": "Post",
+    "RelativePath": "Webhook",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "body",
+        "Type": "System.Object",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.WhatsAppController",
+    "Method": "SendFile",
+    "RelativePath": "WhatsApp/send-file",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "sendFileDto",
+        "Type": "WhatsAppProject.Dtos.SendFileDto",
+        "IsRequired": true
+      },
+      {
+        "Name": "sectorId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.WhatsAppController",
+    "Method": "SendMessage",
+    "RelativePath": "WhatsApp/send-message",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "messageDto",
+        "Type": "WhatsAppProject.Dtos.MessageDto",
+        "IsRequired": true
+      },
+      {
+        "Name": "sectorId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
