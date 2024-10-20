@@ -72,18 +72,6 @@
               "target": "Package",
               "version": "[3.1.24, )"
             },
-            "NAudio": {
-              "target": "Package",
-              "version": "[2.2.1, )"
-            },
-            "Opus": {
-              "target": "Package",
-              "version": "[1.0.0, )"
-            },
-            "OpusDotNet": {
-              "target": "Package",
-              "version": "[1.0.3, )"
-            },
             "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
               "version": "[8.0.2, )"

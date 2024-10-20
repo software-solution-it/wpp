@@ -13,9 +13,6 @@
           "Microsoft.EntityFrameworkCore.SqlServer": "8.0.10",
           "Microsoft.EntityFrameworkCore.Tools": "8.0.10",
           "Microsoft.Extensions.Configuration.AzureKeyVault": "3.1.24",
-          "NAudio": "2.2.1",
-          "Opus": "1.0.0",
-          "OpusDotNet": "1.0.3",
           "Pomelo.EntityFrameworkCore.MySql": "8.0.2",
           "Swashbuckle.AspNetCore": "6.9.0"
         },
@@ -788,10 +785,16 @@
           "System.Runtime": "4.3.0"
         }
       },
-      "Microsoft.Win32.Registry/4.7.0": {
+      "Microsoft.Win32.Registry/4.3.0": {
         "dependencies": {
-          "System.Security.AccessControl": "6.0.0",
-          "System.Security.Principal.Windows": "5.0.0"
+          "Microsoft.NETCore.Platforms": "1.1.0",
+          "System.Collections": "4.3.0",
+          "System.Globalization": "4.3.0",
+          "System.Resources.ResourceManager": "4.3.0",
+          "System.Runtime": "4.3.0",
+          "System.Runtime.Extensions": "4.3.0",
+          "System.Runtime.Handles": "4.3.0",
+          "System.Runtime.InteropServices": "4.3.0"
         }
       },
       "Microsoft.Win32.SystemEvents/6.0.0": {
@@ -829,75 +832,6 @@
           "lib/net8.0/MySqlConnector.dll": {
             "assemblyVersion": "2.0.0.0",
             "fileVersion": "2.3.5.0"
-          }
-        }
-      },
-      "NAudio/2.2.1": {
-        "dependencies": {
-          "NAudio.Asio": "2.2.1",
-          "NAudio.Core": "2.2.1",
-          "NAudio.Midi": "2.2.1",
-          "NAudio.Wasapi": "2.2.1",
-          "NAudio.WinMM": "2.2.1"
-        },
-        "runtime": {
-          "lib/net6.0/NAudio.dll": {
-            "assemblyVersion": "2.2.1.0",
-            "fileVersion": "2.2.1.0"
-          }
-        }
-      },
-      "NAudio.Asio/2.2.1": {
-        "dependencies": {
-          "Microsoft.Win32.Registry": "4.7.0",
-          "NAudio.Core": "2.2.1"
-        },
-        "runtime": {
-          "lib/netstandard2.0/NAudio.Asio.dll": {
-            "assemblyVersion": "2.2.1.0",
-            "fileVersion": "2.2.1.0"
-          }
-        }
-      },
-      "NAudio.Core/2.2.1": {
-        "runtime": {
-          "lib/netstandard2.0/NAudio.Core.dll": {
-            "assemblyVersion": "2.2.1.0",
-            "fileVersion": "2.2.1.0"
-          }
-        }
-      },
-      "NAudio.Midi/2.2.1": {
-        "dependencies": {
-          "NAudio.Core": "2.2.1"
-        },
-        "runtime": {
-          "lib/netstandard2.0/NAudio.Midi.dll": {
-            "assemblyVersion": "2.2.1.0",
-            "fileVersion": "2.2.1.0"
-          }
-        }
-      },
-      "NAudio.Wasapi/2.2.1": {
-        "dependencies": {
-          "NAudio.Core": "2.2.1"
-        },
-        "runtime": {
-          "lib/netstandard2.0/NAudio.Wasapi.dll": {
-            "assemblyVersion": "2.2.1.0",
-            "fileVersion": "2.2.1.0"
-          }
-        }
-      },
-      "NAudio.WinMM/2.2.1": {
-        "dependencies": {
-          "Microsoft.Win32.Registry": "4.7.0",
-          "NAudio.Core": "2.2.1"
-        },
-        "runtime": {
-          "lib/netstandard2.0/NAudio.WinMM.dll": {
-            "assemblyVersion": "2.2.1.0",
-            "fileVersion": "2.2.1.0"
           }
         }
       },
@@ -978,46 +912,6 @@
           "lib/netstandard1.0/Newtonsoft.Json.dll": {
             "assemblyVersion": "9.0.0.0",
             "fileVersion": "9.0.1.19813"
-          }
-        }
-      },
-      "Opus/1.0.0": {
-        "runtime": {
-          "lib/netcoreapp3.1/libsodium.dll": {
-            "fileVersion": "1.0.18.0"
-          },
-          "lib/netcoreapp3.1/opus.dll": {
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "OpusDotNet/1.0.3": {
-        "dependencies": {
-          "OpusDotNet.opus.win-x64": "1.3.1",
-          "OpusDotNet.opus.win-x86": "1.3.1"
-        },
-        "runtime": {
-          "lib/netstandard2.0/OpusDotNet.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
-          }
-        }
-      },
-      "OpusDotNet.opus.win-x64/1.3.1": {
-        "runtimeTargets": {
-          "runtimes/win-x64/native/opus.dll": {
-            "rid": "win-x64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "OpusDotNet.opus.win-x86/1.3.1": {
-        "runtimeTargets": {
-          "runtimes/win-x86/native/opus.dll": {
-            "rid": "win-x86",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
           }
         }
       },
@@ -1264,7 +1158,7 @@
         "dependencies": {
           "Microsoft.NETCore.Platforms": "1.1.0",
           "Microsoft.Win32.Primitives": "4.3.0",
-          "Microsoft.Win32.Registry": "4.7.0",
+          "Microsoft.Win32.Registry": "4.3.0",
           "System.Collections": "4.3.0",
           "System.Diagnostics.Debug": "4.3.0",
           "System.Globalization": "4.3.0",
@@ -2435,12 +2329,12 @@
       "path": "microsoft.win32.primitives/4.3.0",
       "hashPath": "microsoft.win32.primitives.4.3.0.nupkg.sha512"
     },
-    "Microsoft.Win32.Registry/4.7.0": {
+    "Microsoft.Win32.Registry/4.3.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-KSrRMb5vNi0CWSGG1++id2ZOs/1QhRqROt+qgbEAdQuGjGrFcl4AOl4/exGPUYz2wUnU42nvJqon1T3U0kPXLA==",
-      "path": "microsoft.win32.registry/4.7.0",
-      "hashPath": "microsoft.win32.registry.4.7.0.nupkg.sha512"
+      "sha512": "sha512-Lw1/VwLH1yxz6SfFEjVRCN0pnflLEsWgnV4qsdJ512/HhTwnKXUG+zDQ4yTO3K/EJQemGoNaBHX5InISNKTzUQ==",
+      "path": "microsoft.win32.registry/4.3.0",
+      "hashPath": "microsoft.win32.registry.4.3.0.nupkg.sha512"
     },
     "Microsoft.Win32.SystemEvents/6.0.0": {
       "type": "package",
@@ -2463,48 +2357,6 @@
       "path": "mysqlconnector/2.3.5",
       "hashPath": "mysqlconnector.2.3.5.nupkg.sha512"
     },
-    "NAudio/2.2.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-c0DzwiyyklM0TP39Y7RObwO3QkWecgM6H60ikiEnsV/aEAJPbj5MFCLaD8BSfKuZe0HGuh9GRGWWlJmSxDc9MA==",
-      "path": "naudio/2.2.1",
-      "hashPath": "naudio.2.2.1.nupkg.sha512"
-    },
-    "NAudio.Asio/2.2.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-hQglyOT5iT3XuGpBP8ZG0+aoqwRfidHjTNehpoWwX0g6KJEgtH2VaqM2nuJ2mheKZa/IBqB4YQTZVvrIapzfOA==",
-      "path": "naudio.asio/2.2.1",
-      "hashPath": "naudio.asio.2.2.1.nupkg.sha512"
-    },
-    "NAudio.Core/2.2.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-GgkdP6K/7FqXFo7uHvoqGZTJvW4z8g2IffhOO4JHaLzKCdDOUEzVKtveoZkCuUX8eV2HAINqi7VFqlFndrnz/g==",
-      "path": "naudio.core/2.2.1",
-      "hashPath": "naudio.core.2.2.1.nupkg.sha512"
-    },
-    "NAudio.Midi/2.2.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-6r23ylGo5aeP02WFXsPquz0T0hFJWyh+7t++tz19tc3Kr38NHm+Z9j+FiAv+xkH8tZqXJqus9Q8p6u7bidIgbw==",
-      "path": "naudio.midi/2.2.1",
-      "hashPath": "naudio.midi.2.2.1.nupkg.sha512"
-    },
-    "NAudio.Wasapi/2.2.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-lFfXoqacZZe0WqNChJgGYI+XV/n/61LzPHT3C1CJp4khoxeo2sziyX5wzNYWeCMNbsWxFvT3b3iXeY1UYjBhZw==",
-      "path": "naudio.wasapi/2.2.1",
-      "hashPath": "naudio.wasapi.2.2.1.nupkg.sha512"
-    },
-    "NAudio.WinMM/2.2.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-xFHRFwH4x6aq3IxRbewvO33ugJRvZFEOfO62i7uQJRUNW2cnu6BeBTHUS0JD5KBucZbHZaYqxQG8dwZ47ezQuQ==",
-      "path": "naudio.winmm/2.2.1",
-      "hashPath": "naudio.winmm.2.2.1.nupkg.sha512"
-    },
     "NETStandard.Library/1.6.1": {
       "type": "package",
       "serviceable": true,
@@ -2518,34 +2370,6 @@
       "sha512": "sha512-U82mHQSKaIk+lpSVCbWYKNavmNH1i5xrExDEquU1i6I5pV6UMOqRnJRSlKO3cMPfcpp0RgDY+8jUXHdQ4IfXvw==",
       "path": "newtonsoft.json/9.0.1",
       "hashPath": "newtonsoft.json.9.0.1.nupkg.sha512"
-    },
-    "Opus/1.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-0VBlW7vOk+0r1w+iZcgEaLEkL9dCIxkbSdgfPFLmNZtlEUNIZ+YrytEUN6FkgRQwivCEi1vlwTUyTVB45d5HfA==",
-      "path": "opus/1.0.0",
-      "hashPath": "opus.1.0.0.nupkg.sha512"
-    },
-    "OpusDotNet/1.0.3": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-Zo1Rf1lY9BQBWSIPZWyVJd1g5QIPU8vM53uMG684HlHOBWXgUrD1qpZk8kLdIcivS9AEDQbBWHSMV9JeTJb7Bw==",
-      "path": "opusdotnet/1.0.3",
-      "hashPath": "opusdotnet.1.0.3.nupkg.sha512"
-    },
-    "OpusDotNet.opus.win-x64/1.3.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-sf6Ar70AFaA+m/70VMGHFXKJnOCMGJWILCACbngea90BL2SrVe5QxLpfuYEw45lmPUBRWbPv994sXutV180HTw==",
-      "path": "opusdotnet.opus.win-x64/1.3.1",
-      "hashPath": "opusdotnet.opus.win-x64.1.3.1.nupkg.sha512"
-    },
-    "OpusDotNet.opus.win-x86/1.3.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-bL4wPDr2xFImQcEUOeJQHyKjECvBp+XAs+bm/c+kmYxOg80Yj3f5MI99fTI7EsuFr4Ho7lKU6ZJ0WfvTQPQZMQ==",
-      "path": "opusdotnet.opus.win-x86/1.3.1",
-      "hashPath": "opusdotnet.opus.win-x86.1.3.1.nupkg.sha512"
     },
     "Pomelo.EntityFrameworkCore.MySql/8.0.2": {
       "type": "package",
