@@ -7,18 +7,17 @@ namespace WhatsAppProject.Services
 {
     public class WhatsAppCredentialsService
     {
-        private readonly WhatsAppContext _context;
+        private readonly SaasDbContext _saasContext;
 
-        public WhatsAppCredentialsService(WhatsAppContext context)
+        public WhatsAppCredentialsService(SaasDbContext saasContext)
         {
-            _context = context;
+            _saasContext = saasContext; 
         }
 
-        public async Task<WhatsAppCredentials> GetCredentialsAsync(int sectorId)
+        public async Task<Sector> GetCredentialsAsync(int sectorId)
         {
-            // Busca as credenciais com base no sectorId
-            return await _context.WhatsAppCredentials
-                .FirstOrDefaultAsync(c => c.SectorId == sectorId);
+            return await _saasContext.Sector
+                .FirstOrDefaultAsync(c => c.Id == sectorId);
         }
 
         public async Task UpdateCredentialsAsync(string phoneNumber, string accessToken, int sectorId)
@@ -27,26 +26,22 @@ namespace WhatsAppProject.Services
 
             if (credentials == null)
             {
-                // Insere novas credenciais se não houver nenhuma para o setor
-                credentials = new WhatsAppCredentials
+                credentials = new Sector
                 {
                     PhoneNumberId = phoneNumber,
                     AccessToken = accessToken,
-                    SectorId = sectorId
                 };
 
-                _context.WhatsAppCredentials.Add(credentials);
+                _saasContext.Sector.Add(credentials);
             }
             else
             {
-                // Atualiza as credenciais existentes
                 credentials.PhoneNumberId = phoneNumber;
                 credentials.AccessToken = accessToken;
-                credentials.SectorId = sectorId;
-                _context.WhatsAppCredentials.Update(credentials);
+                _saasContext.Sector.Update(credentials);
             }
 
-            await _context.SaveChangesAsync();
+            await _saasContext.SaveChangesAsync();
         }
     }
 }

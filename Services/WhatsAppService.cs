@@ -7,33 +7,47 @@ using Microsoft.EntityFrameworkCore;
 using WhatsAppProject.Data;
 using WhatsAppProject.Dtos;
 using WhatsAppProject.Entities;
+using Xabe.FFmpeg;
 
 namespace WhatsAppProject.Services
 {
     public class WhatsAppService
     {
-        private readonly WhatsAppContext _context;
+        private readonly WhatsAppContext _context; 
+        private readonly SaasDbContext _saasContext;
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
+        private readonly WebSocketManager _webSocketManager;
 
-        public WhatsAppService(WhatsAppContext context, HttpClient httpClient, IConfiguration configuration)
+        public WhatsAppService(
+            WhatsAppContext context,
+            SaasDbContext saasContext,
+            HttpClient httpClient,
+            IConfiguration configuration,
+            WebSocketManager webSocketManager)
         {
             _context = context;
+            _saasContext = saasContext;
             _httpClient = httpClient;
             _configuration = configuration;
+            _webSocketManager = webSocketManager;
         }
 
         // Envia mensagem de texto
-        public async Task SendMessageAsync(MessageDto messageDto, int sectorId)
+        public async Task SendMessageAsync(MessageDto messageDto)
         {
-            var credentials = await GetWhatsAppCredentialsBySectorIdAsync(sectorId);
-
-            var message = new Message
+            var message = new Messages
             {
-                Recipient = messageDto.Recipient,
                 Content = messageDto.Content,
-                SentAt = DateTime.UtcNow
+                MediaType = "text",
+                MediaUrl = null,
+                SectorId = messageDto.SectorId,
+                SentAt = DateTime.UtcNow,
+                IsSent = true,
+                ContactID = messageDto.ContactId
             };
+
+            await _context.Messages.AddAsync(message);
 
             var payload = new
             {
@@ -47,37 +61,28 @@ namespace WhatsAppProject.Services
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-            // Usa o token do banco de dados
+            var credentials = await GetWhatsAppCredentialsBySectorIdAsync(messageDto.SectorId);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
 
             var response = await _httpClient.PostAsync($"https://graph.facebook.com/v20.0/{credentials.PhoneNumberId}/messages", content);
             response.EnsureSuccessStatusCode();
 
-            await _context.Messages.AddAsync(message);
             await _context.SaveChangesAsync();
+
+
+            var messageJson = JsonSerializer.Serialize(new
+            {
+                Content = messageDto.Content,
+                Recipient = messageDto.Recipient,
+                SectorId = messageDto.SectorId,
+                IsSent = true,
+                ContactID = messageDto.ContactId
+            });
+
+            await _webSocketManager.SendMessageToSectorAsync(messageDto.SectorId.ToString(), messageJson);
         }
 
-        public async Task SendMediaAsync(SendFileDto sendFileDto, int sectorId)
-        {
-            // Passo 1: Upload do arquivo base64 para o S3
-            var fileUrl = await UploadMediaToS3Async(sendFileDto.Base64File, sendFileDto.MediaType, sendFileDto.FileName);
-
-            var mediaType = MapMimeTypeToMediaType(sendFileDto.MediaType);
-
-            // Se for áudio, converta para Opus
-            if (mediaType == "audio")
-            {
-                var opusFileUrl = await ConvertAudioToOpusAndUploadToS3Async(fileUrl);
-                await SendMediaMessageAsync(opusFileUrl, sendFileDto.Recipient, "codecs=opus", sendFileDto.FileName, sendFileDto.Caption, sectorId);
-            }
-            else
-            {
-                await SendMediaMessageAsync(fileUrl, sendFileDto.Recipient, mediaType, sendFileDto.FileName, sendFileDto.Caption, sectorId);
-            }
-        }
-
-        // Upload de mídia para o S3
-        private async Task<string> UploadMediaToS3Async(string base64File, string mediaType, string fileName)
+        public async Task<string> UploadMediaToS3Async(string base64File, string mediaType, string originalFileName)
         {
             var awsAccessKey = _configuration["AWS:AccessKey"];
             var awsSecretKey = _configuration["AWS:SecretKey"];
@@ -86,83 +91,123 @@ namespace WhatsAppProject.Services
 
             var s3Client = new AmazonS3Client(awsAccessKey, awsSecretKey, Amazon.RegionEndpoint.GetBySystemName(awsRegion));
 
-            // Decodificar o base64 para bytes
             var fileBytes = Convert.FromBase64String(base64File);
-            var tempFilePath = Path.GetTempFileName();
-            await File.WriteAllBytesAsync(tempFilePath, fileBytes);
+            var tempInputPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{Path.GetExtension(originalFileName)}");
+            await File.WriteAllBytesAsync(tempInputPath, fileBytes);
 
-            try
+            if (!IsSupportedAudioFormat(mediaType))
             {
                 var transferUtility = new TransferUtility(s3Client);
-
-                // Faz upload para o S3
                 var fileTransferRequest = new TransferUtilityUploadRequest
                 {
                     BucketName = awsBucketName,
-                    Key = fileName,
-                    InputStream = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read),
+                    Key = Path.GetFileName(tempInputPath),
+                    InputStream = new FileStream(tempInputPath, FileMode.Open, FileAccess.Read),
                     ContentType = mediaType
                 };
 
                 await transferUtility.UploadAsync(fileTransferRequest);
+                return $"https://{awsBucketName}.s3.amazonaws.com/{Path.GetFileName(tempInputPath)}"; 
+            }
 
-                // Retorna a URL do arquivo
-                var fileUrl = $"https://{awsBucketName}.s3.amazonaws.com/{fileName}";
+            var tempOutputPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.opus");
 
-                return fileUrl;
+            try
+            {
+                FFmpeg.SetExecutablesPath(@"C:/Program Files/ffmpeg/bin/");
+
+                await FFmpeg.Conversions.New()
+                    .AddParameter($"-i \"{tempInputPath}\" -c:a libopus \"{tempOutputPath}\"", ParameterPosition.PreInput)
+                    .Start();
+
+                var transferUtility = new TransferUtility(s3Client);
+                var fileTransferRequest = new TransferUtilityUploadRequest
+                {
+                    BucketName = awsBucketName,
+                    Key = Path.GetFileName(tempOutputPath),
+                    InputStream = new FileStream(tempOutputPath, FileMode.Open, FileAccess.Read),
+                    ContentType = "audio/ogg"
+                };
+
+                await transferUtility.UploadAsync(fileTransferRequest);
+
+                return $"https://{awsBucketName}.s3.amazonaws.com/{Path.GetFileName(tempOutputPath)}";
             }
             finally
             {
-                File.Delete(tempFilePath); // Limpa o arquivo temporário
+                if (File.Exists(tempInputPath))
+                    File.Delete(tempInputPath);
+
+                if (File.Exists(tempOutputPath))
+                    File.Delete(tempOutputPath);
             }
         }
-
-        private async Task<string> ConvertAudioToOpusAndUploadToS3Async(string audioFileUrl)
+        public async Task<object> SendMediaAsync(SendFileDto sendFileDto)
         {
-            var tempFilePath = Path.GetTempFileName();
-            var opusFilePath = Path.ChangeExtension(tempFilePath, ".opus");
+            var fileUrl = await UploadMediaToS3Async(sendFileDto.Base64File, sendFileDto.MediaType, sendFileDto.FileName);
 
-            // Baixar o arquivo do S3
-            using (var webClient = new HttpClient())
+            var mediaType = MapMimeTypeToMediaType(sendFileDto.MediaType);
+            var credentials = await GetWhatsAppCredentialsBySectorIdAsync(sendFileDto.SectorId);
+
+            var message = new Messages
             {
-                var audioData = await webClient.GetByteArrayAsync(audioFileUrl);
-                await File.WriteAllBytesAsync(tempFilePath, audioData);
-            }
-
-            var ffmpegPath = @"C:\Program Files\ffmpeg\bin\ffmpeg.exe"; // Caminho do executável FFmpeg
-            var arguments = $"-i \"{tempFilePath}\" -c:a libopus \"{opusFilePath}\"";
-
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = ffmpegPath,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                Content = sendFileDto.Caption,
+                MediaType = mediaType,
+                MediaUrl = fileUrl,
+                SectorId = sendFileDto.SectorId,
+                SentAt = DateTime.UtcNow,
+                IsSent = true,
+                ContactID = sendFileDto.ContactId
             };
 
-            using (var process = Process.Start(processStartInfo))
+            await _context.Messages.AddAsync(message);
+
+            await SendMediaMessageAsync(fileUrl, sendFileDto.Recipient, mediaType, sendFileDto.FileName, sendFileDto.Caption, sendFileDto.SectorId);
+
+            await _context.SaveChangesAsync();
+
+            var mediaMessageJson = JsonSerializer.Serialize(new
             {
-                await process.WaitForExitAsync();
-                if (process.ExitCode != 0)
-                {
-                    throw new Exception("FFmpeg conversion to Opus failed.");
-                }
-            }
+                Content = sendFileDto.Caption,
+                MediaType = mediaType,
+                MediaUrl = fileUrl,
+                IsSent = true,
+                ContactID = sendFileDto.ContactId,
+                SectorId = sendFileDto.SectorId
+            });
 
-            // Passo 2: Fazer upload do arquivo Opus convertido para o S3
-            var opusFileName = Path.GetFileNameWithoutExtension(audioFileUrl) + ".opus"; // Use o mesmo nome, mas com extensão .opus
-            var opusFileUrl = await UploadMediaToS3Async(Convert.ToBase64String(await File.ReadAllBytesAsync(opusFilePath)), "audio/opus", opusFileName);
+            await _webSocketManager.SendMessageToSectorAsync(sendFileDto.SectorId.ToString(), mediaMessageJson);
 
-            // Limpar o arquivo temporário
-            File.Delete(tempFilePath);
-            File.Delete(opusFilePath); // Exclui o arquivo Opus temporário
-
-            return opusFileUrl;
+            return new
+            {
+                Content = sendFileDto.Caption,
+                MediaType = mediaType,
+                MediaUrl = fileUrl,
+                SectorId = sendFileDto.SectorId,
+                ContactID = sendFileDto.ContactId,
+                SentAt = message.SentAt,
+                IsSent = message.IsSent
+            };
         }
 
-        private async Task SendMediaMessageAsync(string fileUrl, string recipient, string mediaType, string fileName, string caption, int sectorId)
+        private string GenerateRandomHash()
+        {
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(Guid.NewGuid().ToString());
+                byte[] hashBytes = sha256.ComputeHash(bytes);
+
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            }
+        }
+
+        private async Task SendMediaMessageAsync(
+            string fileUrl,
+            string recipient,
+            string mediaType,
+            string fileName,
+            string caption,
+            int sectorId)
         {
             var credentials = await GetWhatsAppCredentialsBySectorIdAsync(sectorId);
 
@@ -170,14 +215,16 @@ namespace WhatsAppProject.Services
 
             switch (mediaType)
             {
-                case "codecs=opus":
+                case "audio":
                     payload = new
                     {
                         messaging_product = "whatsapp",
-                        recipient_type = "individual",
                         to = recipient,
                         type = "audio",
-                        audio = new { link = fileUrl }
+                        audio = new
+                        {
+                            link = fileUrl
+                        }
                     };
                     break;
 
@@ -185,7 +232,6 @@ namespace WhatsAppProject.Services
                     payload = new
                     {
                         messaging_product = "whatsapp",
-                        recipient_type = "individual",
                         to = recipient,
                         type = "image",
                         image = new { link = fileUrl, caption = caption }
@@ -196,7 +242,6 @@ namespace WhatsAppProject.Services
                     payload = new
                     {
                         messaging_product = "whatsapp",
-                        recipient_type = "individual",
                         to = recipient,
                         type = "video",
                         video = new { link = fileUrl }
@@ -207,7 +252,6 @@ namespace WhatsAppProject.Services
                     payload = new
                     {
                         messaging_product = "whatsapp",
-                        recipient_type = "individual",
                         to = recipient,
                         type = "document",
                         document = new
@@ -234,9 +278,9 @@ namespace WhatsAppProject.Services
             response.EnsureSuccessStatusCode();
         }
 
-        private async Task<WhatsAppCredentials> GetWhatsAppCredentialsBySectorIdAsync(int sectorId)
+        private async Task<Sector> GetWhatsAppCredentialsBySectorIdAsync(int sectorId)
         {
-            var credentials = await _context.WhatsAppCredentials.FirstOrDefaultAsync(c => c.SectorId == sectorId);
+            var credentials = await _saasContext.Sector.FirstOrDefaultAsync(c => c.Id == sectorId);
             if (credentials == null)
             {
                 throw new Exception($"Credenciais não encontradas para o setor com ID {sectorId}");
@@ -244,17 +288,21 @@ namespace WhatsAppProject.Services
             return credentials;
         }
 
+
+
         private string MapMimeTypeToMediaType(string mimeType)
         {
-            if (mimeType.StartsWith("image/"))
+            var normalizedMimeType = mimeType.Split(';')[0];
+
+            if (normalizedMimeType.StartsWith("image/"))
             {
                 return "image";
             }
-            else if (mimeType.StartsWith("audio/"))
+            else if (normalizedMimeType.StartsWith("audio/"))
             {
                 return "audio";
             }
-            else if (mimeType.StartsWith("video/"))
+            else if (normalizedMimeType.StartsWith("video/"))
             {
                 return "video";
             }
@@ -263,7 +311,25 @@ namespace WhatsAppProject.Services
                 return "document";
             }
         }
+
+        private bool IsSupportedAudioFormat(string mimeType)
+        {
+            var supportedAudioMimeTypes = new List<string>
+            {
+                "audio/aac",
+                "audio/mp4",
+                "audio/mpeg",
+                "audio/amr",
+                "audio/ogg"
+            };
+
+            var normalizedMimeType = mimeType.Split(';')[0].ToLower();
+
+            return supportedAudioMimeTypes.Contains(normalizedMimeType);
+        }
     }
+
+
 
     // DTOs
     public class WhatsAppMediaResponse

@@ -54,6 +54,18 @@
               "target": "Package",
               "version": "[3.7.405, )"
             },
+            "Hangfire": {
+              "target": "Package",
+              "version": "[1.8.15, )"
+            },
+            "Hangfire.AspNetCore": {
+              "target": "Package",
+              "version": "[1.8.15, )"
+            },
+            "Hangfire.MySqlStorage": {
+              "target": "Package",
+              "version": "[2.0.3, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[8.0.8, )"
@@ -72,6 +84,10 @@
               "target": "Package",
               "version": "[3.1.24, )"
             },
+            "MongoDB.Driver": {
+              "target": "Package",
+              "version": "[3.0.0, )"
+            },
             "Pomelo.EntityFrameworkCore.MySql": {
               "target": "Package",
               "version": "[8.0.2, )"
@@ -79,6 +95,10 @@
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.9.0, )"
+            },
+            "Xabe.FFmpeg": {
+              "target": "Package",
+              "version": "[5.2.6, )"
             }
           },
           "imports": [

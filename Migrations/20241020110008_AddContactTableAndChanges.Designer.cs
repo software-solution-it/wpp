@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WhatsAppProject.Data;
 
@@ -11,9 +12,11 @@ using WhatsAppProject.Data;
 namespace WhatsAppProject.Migrations
 {
     [DbContext(typeof(WhatsAppContext))]
-    partial class WhatsAppContextModelSnapshot : ModelSnapshot
+    [Migration("20241020110008_AddContactTableAndChanges")]
+    partial class AddContactTableAndChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,24 +34,28 @@ namespace WhatsAppProject.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CredentialId")
+                        .HasColumnType("int")
+                        .HasColumnName("credential_id");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("varchar(100)")
-                        .HasColumnName("nome");
+                        .HasColumnName("name");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("varchar(15)")
-                        .HasColumnName("numero");
+                        .HasColumnName("phone_number");
 
                     b.Property<string>("ProfilePictureUrl")
                         .HasColumnType("varchar(255)")
-                        .HasColumnName("foto_perfil");
+                        .HasColumnName("profile_picture_url");
 
                     b.Property<int?>("SectorId")
                         .IsRequired()
                         .HasColumnType("int")
-                        .HasColumnName("setor_id");
+                        .HasColumnName("sector_id");
 
                     b.HasKey("Id");
 
@@ -92,40 +99,39 @@ namespace WhatsAppProject.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("ContactID")
-                        .IsRequired()
-                        .HasColumnType("int")
-                        .HasColumnName("contato_id");
-
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("longtext")
-                        .HasColumnName("conteudo");
+                        .HasColumnName("content");
 
                     b.Property<string>("MediaType")
+                        .IsRequired()
                         .HasColumnType("varchar(50)")
-                        .HasColumnName("tipo");
+                        .HasColumnName("media_type");
 
                     b.Property<string>("MediaUrl")
+                        .IsRequired()
                         .HasColumnType("varchar(255)")
-                        .HasColumnName("url");
+                        .HasColumnName("media_url");
 
-                    b.Property<int>("SectorId")
+                    b.Property<int>("ReceiverId")
                         .HasColumnType("int")
-                        .HasColumnName("id_setor");
+                        .HasColumnName("receiver_id");
 
-                    b.Property<DateTime?>("SentAt")
+                    b.Property<int>("SenderId")
+                        .HasColumnType("int")
+                        .HasColumnName("sender_id");
+
+                    b.Property<DateTime>("SentAt")
                         .HasColumnType("datetime(6)")
-                        .HasColumnName("data_envio");
+                        .HasColumnName("sent_at");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ContactID");
 
                     b.ToTable("messages");
                 });
 
-            modelBuilder.Entity("WhatsAppProject.Entities.Sector", b =>
+            modelBuilder.Entity("WhatsAppProject.Entities.WhatsAppCredentials", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -137,46 +143,24 @@ namespace WhatsAppProject.Migrations
                     b.Property<string>("AccessToken")
                         .IsRequired()
                         .HasColumnType("longtext")
-                        .HasColumnName("token_acesso");
+                        .HasColumnName("access_token");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)")
-                        .HasColumnName("data_criacao");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasColumnType("longtext")
-                        .HasColumnName("descricao");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasColumnType("longtext")
-                        .HasColumnName("nome");
+                        .HasColumnName("created_at");
 
                     b.Property<string>("PhoneNumberId")
                         .IsRequired()
                         .HasColumnType("longtext")
-                        .HasColumnName("numero");
+                        .HasColumnName("phone_number_id");
+
+                    b.Property<int>("SectorId")
+                        .HasColumnType("int")
+                        .HasColumnName("sector_id");
 
                     b.HasKey("Id");
 
-                    b.ToTable("sector");
-                });
-
-            modelBuilder.Entity("WhatsAppProject.Entities.Messages", b =>
-                {
-                    b.HasOne("WhatsAppProject.Entities.Contacts", "Contact")
-                        .WithMany("Messages")
-                        .HasForeignKey("ContactID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Contact");
-                });
-
-            modelBuilder.Entity("WhatsAppProject.Entities.Contacts", b =>
-                {
-                    b.Navigation("Messages");
+                    b.ToTable("whatsapp_credentials");
                 });
 #pragma warning restore 612, 618
         }

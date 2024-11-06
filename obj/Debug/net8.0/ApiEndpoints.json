@@ -1,5 +1,166 @@
 [
   {
+    "ContainingType": "WhatsAppProject.Controllers.MessageSchedullingController",
+    "Method": "GetAll",
+    "RelativePath": "api/MessageSchedulling",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[WhatsAppProject.Entities.MessageScheduling, WhatsAppProject, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.ContactController",
+    "Method": "CreateOrUpdateContact",
+    "RelativePath": "contact",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "contactDto",
+        "Type": "WhatsAppProject.Dtos.ContactDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "WhatsAppProject.Entities.Contacts",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.ContactController",
+    "Method": "GetMessagesByContactId",
+    "RelativePath": "contact/{contactId}/messages",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "contactId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[WhatsAppProject.Entities.Messages, WhatsAppProject, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.ContactController",
+    "Method": "GetContactById",
+    "RelativePath": "contact/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "WhatsAppProject.Entities.Contacts",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetContactById"
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.ContactController",
+    "Method": "DeleteContact",
+    "RelativePath": "contact/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.ContactController",
+    "Method": "GetContactsBySectorId",
+    "RelativePath": "contact/sector/{sectorId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "sectorId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[WhatsAppProject.Entities.Contacts, WhatsAppProject, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.TokenController",
+    "Method": "GenerateToken",
+    "RelativePath": "Token/generate-token",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.TokenController",
+    "Method": "CheckAndRefreshToken",
+    "RelativePath": "Token/refresh-token",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "WhatsAppProject.Controllers.WebhookController",
     "Method": "Get",
     "RelativePath": "Webhook",
@@ -8,17 +169,17 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "hub_mode",
+        "Name": "hub.mode",
         "Type": "System.String",
         "IsRequired": false
       },
       {
-        "Name": "hub_challenge",
+        "Name": "hub.challenge",
         "Type": "System.String",
         "IsRequired": false
       },
       {
-        "Name": "hub_verify_token",
+        "Name": "hub.verify_token",
         "Type": "System.String",
         "IsRequired": false
       }
@@ -27,7 +188,7 @@
   },
   {
     "ContainingType": "WhatsAppProject.Controllers.WebhookController",
-    "Method": "Post",
+    "Method": "Webhook",
     "RelativePath": "Webhook",
     "HttpMethod": "POST",
     "IsController": true,
@@ -35,7 +196,7 @@
     "Parameters": [
       {
         "Name": "body",
-        "Type": "System.Object",
+        "Type": "System.Text.Json.JsonElement",
         "IsRequired": true
       }
     ],
@@ -44,7 +205,7 @@
   {
     "ContainingType": "WhatsAppProject.Controllers.WhatsAppController",
     "Method": "SendFile",
-    "RelativePath": "WhatsApp/send-file",
+    "RelativePath": "whatsapp/send-file",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -53,11 +214,6 @@
         "Name": "sendFileDto",
         "Type": "WhatsAppProject.Dtos.SendFileDto",
         "IsRequired": true
-      },
-      {
-        "Name": "sectorId",
-        "Type": "System.Int32",
-        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -65,7 +221,7 @@
   {
     "ContainingType": "WhatsAppProject.Controllers.WhatsAppController",
     "Method": "SendMessage",
-    "RelativePath": "WhatsApp/send-message",
+    "RelativePath": "whatsapp/send-message",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -74,11 +230,6 @@
         "Name": "messageDto",
         "Type": "WhatsAppProject.Dtos.MessageDto",
         "IsRequired": true
-      },
-      {
-        "Name": "sectorId",
-        "Type": "System.Int32",
-        "IsRequired": false
       }
     ],
     "ReturnTypes": []

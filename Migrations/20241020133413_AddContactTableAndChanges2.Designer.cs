@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WhatsAppProject.Data;
 
@@ -11,9 +12,11 @@ using WhatsAppProject.Data;
 namespace WhatsAppProject.Migrations
 {
     [DbContext(typeof(WhatsAppContext))]
-    partial class WhatsAppContextModelSnapshot : ModelSnapshot
+    [Migration("20241020133413_AddContactTableAndChanges2")]
+    partial class AddContactTableAndChanges2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -92,35 +95,34 @@ namespace WhatsAppProject.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("ContactID")
-                        .IsRequired()
-                        .HasColumnType("int")
-                        .HasColumnName("contato_id");
-
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("longtext")
                         .HasColumnName("conteudo");
 
                     b.Property<string>("MediaType")
+                        .IsRequired()
                         .HasColumnType("varchar(50)")
                         .HasColumnName("tipo");
 
                     b.Property<string>("MediaUrl")
+                        .IsRequired()
                         .HasColumnType("varchar(255)")
                         .HasColumnName("url");
+
+                    b.Property<int>("ReceiverId")
+                        .HasColumnType("int")
+                        .HasColumnName("id_destinatario");
 
                     b.Property<int>("SectorId")
                         .HasColumnType("int")
                         .HasColumnName("id_setor");
 
-                    b.Property<DateTime?>("SentAt")
+                    b.Property<DateTime>("SentAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("data_envio");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ContactID");
 
                     b.ToTable("messages");
                 });
@@ -161,22 +163,6 @@ namespace WhatsAppProject.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("sector");
-                });
-
-            modelBuilder.Entity("WhatsAppProject.Entities.Messages", b =>
-                {
-                    b.HasOne("WhatsAppProject.Entities.Contacts", "Contact")
-                        .WithMany("Messages")
-                        .HasForeignKey("ContactID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Contact");
-                });
-
-            modelBuilder.Entity("WhatsAppProject.Entities.Contacts", b =>
-                {
-                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }
