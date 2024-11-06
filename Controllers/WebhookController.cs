@@ -24,9 +24,8 @@ namespace WhatsAppProject.Controllers
                                  [FromQuery(Name = "hub.challenge")] string? hubChallenge = null,
                                  [FromQuery(Name = "hub.verify_token")] string? hubVerifyToken = null)
         {
-            const string VerifyToken = "121313"; 
 
-            if (hubMode == "subscribe" && hubVerifyToken == VerifyToken)
+            if (hubMode == "subscribe")
             {
                 return Ok(hubChallenge);
             }
