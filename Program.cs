@@ -126,9 +126,6 @@ async Task Echo(HttpContext context, WebSocket webSocket, WebSocketManager webSo
 
 app.UseHangfireDashboard();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
 
     app.UseSwagger();
 
@@ -136,8 +133,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "WhatsApp API v1");
-    });
-}
+   });
 
 using (var scope = app.Services.CreateScope())
 {
