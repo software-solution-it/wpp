@@ -87,6 +87,8 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+app.UseCors("AllowAll");
+
 app.UseWebSockets();
 
 app.Use(async (context, next) =>
