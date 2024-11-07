@@ -12,6 +12,18 @@ using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        builder =>
+        {
+            builder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
+
 builder.Services.AddControllers();
 
 builder.Services.AddDbContext<WhatsAppContext>(options =>
@@ -144,6 +156,8 @@ using (var scope = app.Services.CreateScope())
         Cron.Minutely 
     );
 }
+
+
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
