@@ -224,7 +224,7 @@ namespace WhatsAppProject.Services
             var awsAccessKey = _configuration["AWS:AccessKey"];
             var awsSecretKey = _configuration["AWS:SecretKey"];
             var awsBucketName = _configuration["AWS:BucketName"];
-            var awsRegion = "sa-east-1";
+            var awsRegion = "us-east-2";
 
             var s3Client = new AmazonS3Client(awsAccessKey, awsSecretKey, Amazon.RegionEndpoint.GetBySystemName(awsRegion));
 
