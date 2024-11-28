@@ -35,6 +35,12 @@ namespace WhatsAppProject.Services
                 .ToList();
         }
 
+        public async Task UpdateContactAsync(Contacts contact)
+        {
+            _context.Contacts.Update(contact);
+            await _context.SaveChangesAsync();
+        }
+
 
 
         public async Task<Contacts> GetContactByIdAsync(int id)

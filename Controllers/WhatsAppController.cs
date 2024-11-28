@@ -1,4 +1,5 @@
 ﻿// Controllers/WhatsAppController.cs
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using WhatsAppProject.Dtos;
 using WhatsAppProject.Services;
@@ -10,10 +11,12 @@ namespace WhatsAppProject.Controllers
     public class WhatsAppController : ControllerBase
     {
         private readonly WhatsAppService _whatsappService;
+        private readonly WebSocketManager _webSocketManager;
 
-        public WhatsAppController(WhatsAppService whatsappService)
+        public WhatsAppController(WhatsAppService whatsappService, WebSocketManager webSocketManager)
         {
             _whatsappService = whatsappService;
+            _webSocketManager = webSocketManager;
         }
 
         [HttpPost("send-message")]
@@ -43,6 +46,30 @@ namespace WhatsAppProject.Controllers
                 message = "Arquivo enviado com sucesso!",
                 media = mediaResponse
             });
+        }
+
+        [HttpPost("message-read")]
+        public async Task<IActionResult> MarkMessageAsReadViaWebSocket([FromBody] MarkMessageReadDto markMessageReadDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // Marcar como lida no banco de dados
+            var isUpdated = await _whatsappService.MarkMessageAsReadAsync(markMessageReadDto.MessageId);
+
+            if (isUpdated)
+            {
+                // Enviar notificação via WebSocket
+                await _webSocketManager.MarkMessageAsReadAsync(markMessageReadDto.SectorId, markMessageReadDto.MessageId);
+
+                return Ok(new { message = "Mensagem marcada como lida e notificada via WebSocket!" });
+            }
+            else
+            {
+                return NotFound(new { message = "Mensagem não encontrada." });
+            }
         }
 
 

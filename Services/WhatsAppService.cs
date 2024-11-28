@@ -47,6 +47,7 @@ namespace WhatsAppProject.Services
                 ContactID = messageDto.ContactId
             };
 
+            // Adiciona a mensagem ao contexto
             await _context.Messages.AddAsync(message);
 
             var payload = new
@@ -67,11 +68,15 @@ namespace WhatsAppProject.Services
             var response = await _httpClient.PostAsync($"https://graph.facebook.com/v20.0/{credentials.PhoneNumberId}/messages", content);
             response.EnsureSuccessStatusCode();
 
+            // Salva as mudanças no banco de dados, garantindo que o ID foi gerado
             await _context.SaveChangesAsync();
 
+            // Obtém o ID gerado para a mensagem
+            var messageId = message.Id;
 
             var messageJson = JsonSerializer.Serialize(new
             {
+                MessageId = messageId,
                 Content = messageDto.Content,
                 Recipient = messageDto.Recipient,
                 SectorId = messageDto.SectorId,
@@ -79,7 +84,26 @@ namespace WhatsAppProject.Services
                 ContactID = messageDto.ContactId
             });
 
+            // Envia a mensagem via WebSocket
             await _webSocketManager.SendMessageToSectorAsync(messageDto.SectorId.ToString(), messageJson);
+        }
+
+
+
+        public async Task<bool> MarkMessageAsReadAsync(int messageId)
+        {
+            // Buscar a mensagem pelo ID
+            var message = await _context.Messages.FindAsync(messageId);
+
+            if (message == null)
+            {
+                return false; 
+            }
+
+            message.IsRead = true;
+
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<string> UploadMediaToS3Async(string base64File, string mediaType, string originalFileName)
@@ -97,17 +121,37 @@ namespace WhatsAppProject.Services
 
             if (!IsSupportedAudioFormat(mediaType))
             {
-                var transferUtility = new TransferUtility(s3Client);
-                var fileTransferRequest = new TransferUtilityUploadRequest
+                try
                 {
-                    BucketName = awsBucketName,
-                    Key = Path.GetFileName(tempInputPath),
-                    InputStream = new FileStream(tempInputPath, FileMode.Open, FileAccess.Read),
-                    ContentType = mediaType
-                };
+                    var transferUtility = new TransferUtility(s3Client);
+                    var fileTransferRequest = new TransferUtilityUploadRequest
+                    {
+                        BucketName = awsBucketName,
+                        Key = Path.GetFileName(tempInputPath),
+                        InputStream = new FileStream(tempInputPath, FileMode.Open, FileAccess.Read),
+                        ContentType = mediaType,
+                        CannedACL = S3CannedACL.PublicRead // Define o arquivo como público, se necessário
+                    };
 
-                await transferUtility.UploadAsync(fileTransferRequest);
-                return $"https://{awsBucketName}.s3.amazonaws.com/{Path.GetFileName(tempInputPath)}"; 
+                    await transferUtility.UploadAsync(fileTransferRequest);
+                }
+                catch (AmazonS3Exception ex)
+                {
+                    Console.WriteLine($"Erro S3: {ex.Message}, Código: {ex.ErrorCode}, Status HTTP: {ex.StatusCode}");
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erro: {ex.Message}");
+                    throw;
+                }
+                finally
+                {
+                    // Assegura que o arquivo temporário seja deletado
+                    File.Delete(tempInputPath);
+                }
+
+                return $"https://{awsBucketName}.s3.{awsRegion}.amazonaws.com/{Path.GetFileName(tempInputPath)}";
             }
 
             var tempOutputPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.opus");
@@ -320,7 +364,8 @@ namespace WhatsAppProject.Services
                 "audio/mp4",
                 "audio/mpeg",
                 "audio/amr",
-                "audio/ogg"
+                "audio/ogg",
+                "audio/webm"
             };
 
             var normalizedMimeType = mimeType.Split(';')[0].ToLower();

@@ -122,6 +122,19 @@ namespace WhatsAppProject.Services
             string mediaType = null;
             string mediaUrl = null;
 
+            if (!message.TryGetValue("id", out var messageId) || string.IsNullOrWhiteSpace(messageId.ToString()))
+            {
+                _logger.LogWarning("Mensagem sem ID válido foi recebida, ignorando.");
+                return;
+            }
+
+            var existingMessage = await _context.Messages.FirstOrDefaultAsync(m => m.MessageId == messageId.ToString());
+            if (existingMessage != null)
+            {
+                _logger.LogInformation($"Mensagem com ID {messageId} já existe, ignorando a criação.");
+                return;
+            }
+
             if (message.TryGetValue("text", out var textElement))
             {
                 content = textElement["body"]?.ToString() ?? content;
@@ -151,37 +164,50 @@ namespace WhatsAppProject.Services
 
             var newMessage = new Messages
             {
+                MessageId = messageId.ToString(),
                 Content = content,
                 MediaType = mediaType,
                 MediaUrl = mediaUrl,
-                ContactID = contactId, 
+                ContactID = contactId,
                 SectorId = credentials.Id,
                 SentAt = DateTime.UtcNow
             };
 
             await _context.Messages.AddAsync(newMessage);
+
+            var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.Id == contactId);
+            if (contact != null)
+            {
+                contact.IsViewed = false;
+                _context.Contacts.Update(contact);
+
+                await _webSocketManager.SendMessageToSectorAsync(credentials.Id.ToString(), System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Action = "UpdateContactStatus",
+                    ContactId = contact.Id,
+                    PhoneNumber = contact.PhoneNumber,
+                    IsViewed = contact.IsViewed
+                }));
+            }
+
             await _context.SaveChangesAsync();
 
-            var messageDto = new MessageReceivedDto
+            await _webSocketManager.SendMessageToSectorAsync(credentials.Id.ToString(), System.Text.Json.JsonSerializer.Serialize(new
             {
-                Id = newMessage.Id,
+                Action = "NewMessage",
+                Id = newMessage.MessageId,
                 Content = newMessage.Content,
                 MediaType = newMessage.MediaType,
                 MediaUrl = newMessage.MediaUrl,
                 ContactID = newMessage.ContactID,
-                SentAt = newMessage.SentAt,
-                IsSent = newMessage.IsSent
-            };
-
-            var messageJson = JsonConvert.SerializeObject(messageDto);
-
-            string sectorId = credentials.Id.ToString();
-
-            await TriggerWebhookEventAsync(credentials.Id, messageDto);
-
-            await _webSocketManager.SendMessageToSectorAsync(sectorId, messageJson);
+                SectorId = newMessage.SectorId,
+                SentAt = newMessage.SentAt
+            }));
         }
-        
+
+
+
+
 
         private async Task<Contacts> GetOrCreateContactAsync(string phoneNumber, string name, int sectorId)
         {
@@ -212,12 +238,29 @@ namespace WhatsAppProject.Services
 
         private async Task ProcessSentMessage(Newtonsoft.Json.Linq.JObject messageStatus, Sector credentials)
         {
-            if (messageStatus.TryGetValue("recipient_id", out var recipientId) &&
-                messageStatus.TryGetValue("status", out var status))
+            if (messageStatus.TryGetValue("recipient_id", out var recipientId))
             {
-                _logger.LogInformation($"Mensagem para {recipientId} com status {status} enviada.");
+                var contact = await _context.Contacts.FirstOrDefaultAsync(c => c.PhoneNumber == recipientId.ToString());
+                if (contact != null)
+                {
+                    contact.IsViewed = true;
+                    _context.Contacts.Update(contact);
+                    await _context.SaveChangesAsync();
+
+                    // Envia notificação ao WebSocket com o status atualizado
+                    await _webSocketManager.SendMessageToSectorAsync(credentials.Id.ToString(), System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        Action = "UpdateContactStatus",
+                        ContactId = contact.Id,
+                        PhoneNumber = contact.PhoneNumber,
+                        IsViewed = contact.IsViewed
+                    }));
+                }
             }
         }
+
+
+
 
         public async Task<string> UploadMediaToS3Async(string base64File, string mediaType, string originalFileName)
         {

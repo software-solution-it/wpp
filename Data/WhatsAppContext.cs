@@ -1,5 +1,6 @@
 ﻿using Eon.Backend.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using tests_.src.Domain.Entities;
 using WhatsAppProject.Entities;
 using WhatsAppProject.Entities.WhatsAppProject.Entities;
 
@@ -28,6 +29,6 @@ namespace WhatsAppProject.Data
 
         public DbSet<Contacts> Contacts { get; set; }
 
-        public DbSet<FlowDTO> Flows { get; set; }
+        public DbSet<FlowWhatsapp> Flows { get; set; }
     }
 }

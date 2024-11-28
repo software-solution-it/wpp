@@ -25,10 +25,48 @@ public class WebSocketManager
             var buffer = System.Text.Encoding.UTF8.GetBytes(message);
             var segment = new ArraySegment<byte>(buffer);
 
-            var client = clientDict.Keys.FirstOrDefault();
-            if (client != null && client.State == WebSocketState.Open)
+            foreach (var client in clientDict.Keys)
             {
-                await client.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
+                if (client.State == WebSocketState.Open)
+                {
+                    try
+                    {
+                        await client.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Erro ao enviar mensagem para o cliente: {ex.Message}");
+                        RemoveClient(client);
+                    }
+                }
+                else
+                {
+                    RemoveClient(client); 
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Nenhum cliente conectado ao setor {sectorId}.");
+        }
+    }
+
+
+    public async Task MarkMessageAsReadAsync(string sectorId, int messageId)
+    {
+        if (_clients.TryGetValue(sectorId, out var clientDict))
+        {
+            var notification = new { Action = "MarkAsRead", MessageId = messageId };
+            var message = System.Text.Json.JsonSerializer.Serialize(notification);
+            var buffer = System.Text.Encoding.UTF8.GetBytes(message);
+            var segment = new ArraySegment<byte>(buffer);
+
+            foreach (var client in clientDict.Keys)
+            {
+                if (client.State == WebSocketState.Open)
+                {
+                    await client.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
+                }
             }
         }
     }

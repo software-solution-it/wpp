@@ -9,6 +9,7 @@ using WhatsAppProject.Data;
 using WhatsAppProject.Services;
 using Hangfire.MySql;
 using MongoDB.Driver;
+using WhatsAppProject.Dtos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +32,7 @@ builder.Services.AddDbContext<WhatsAppContext>(options =>
         new MySqlServerVersion(new Version(8, 0, 26)),
         mySqlOptions => mySqlOptions.EnableRetryOnFailure()
     )
-    .EnableSensitiveDataLogging() 
+    .EnableSensitiveDataLogging()
     .EnableDetailedErrors()
 );
 
@@ -47,7 +48,6 @@ builder.Services.AddDbContext<SaasDbContext>(options =>
 var mongoConnectionString = builder.Configuration.GetConnectionString("MongoDb");
 var mongoDatabaseName = builder.Configuration["DatabaseName"];
 
-
 builder.Services.AddSingleton<IMongoClient>(new MongoClient(mongoConnectionString));
 
 builder.Services.AddScoped<MongoDbContext>(sp => new MongoDbContext(sp.GetRequiredService<IMongoClient>(), mongoDatabaseName));
@@ -57,13 +57,13 @@ builder.Services.AddScoped<ContactService>();
 builder.Services.AddScoped<WebhookService>();
 builder.Services.AddScoped<MessageSchedulingService>();
 builder.Services.AddSingleton<WebSocketManager>();
-builder.Services.AddHttpClient(); 
+builder.Services.AddHttpClient();
 
 builder.Services.AddHangfire(config =>
 {
     var storageOptions = new MySqlStorageOptions
     {
-        PrepareSchemaIfNecessary = true, 
+        PrepareSchemaIfNecessary = true,
         QueuePollInterval = TimeSpan.FromSeconds(15),
         JobExpirationCheckInterval = TimeSpan.FromHours(1)
     };
@@ -73,7 +73,7 @@ builder.Services.AddHangfire(config =>
 
 builder.Services.AddHangfireServer(options =>
 {
-    options.WorkerCount = 1; 
+    options.WorkerCount = 1;
 });
 
 builder.Services.AddSingleton<IRecurringJobManager, RecurringJobManager>();
@@ -100,10 +100,10 @@ app.Use(async (context, next) =>
 
         var sectorId = context.Request.Query["sectorId"];
 
-        if (!string.IsNullOrEmpty(sectorId)) 
+        if (!string.IsNullOrEmpty(sectorId))
         {
-            webSocketManager.AddClient(sectorId, webSocket); 
-            await Echo(context, webSocket, webSocketManager, sectorId); 
+            webSocketManager.AddClient(sectorId, webSocket);
+            await Echo(context, webSocket, webSocketManager, sectorId);
         }
         else
         {
@@ -130,7 +130,31 @@ async Task Echo(HttpContext context, WebSocket webSocket, WebSocketManager webSo
             var message = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
             Console.WriteLine($"Received message: {message} from sector: {sectorId}");
 
-            await webSocketManager.SendMessageToSectorAsync(sectorId, message);
+            try
+            {
+                // Converte a mensagem JSON para um objeto
+                var messageData = System.Text.Json.JsonSerializer.Deserialize<MessageReadDto>(message);
+
+                if (messageData != null && messageData.IsRead && messageData.MessageId > 0)
+                {
+                    Console.WriteLine($"Marking message {messageData.MessageId} as read.");
+
+                    // Atualiza o status da mensagem no banco de dados
+                    using var scope = context.RequestServices.CreateScope();
+                    var whatsAppService = scope.ServiceProvider.GetRequiredService<WhatsAppService>();
+
+                    await whatsAppService.MarkMessageAsReadAsync(messageData.MessageId);
+                }
+                else
+                {
+                    // Tratamento normal para mensagens comuns
+                    await webSocketManager.SendMessageToSectorAsync(sectorId, message);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing message: {ex.Message}");
+            }
         }
     } while (!result.CloseStatus.HasValue);
 
@@ -140,26 +164,21 @@ async Task Echo(HttpContext context, WebSocket webSocket, WebSocketManager webSo
 
 app.UseHangfireDashboard();
 
-
-    app.UseSwagger();
-
-
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "WhatsApp API v1");
-   });
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "WhatsApp API v1");
+});
 
 using (var scope = app.Services.CreateScope())
 {
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
     recurringJobManager.AddOrUpdate(
-        "CheckNewSchedules", 
+        "CheckNewSchedules",
         () => scope.ServiceProvider.GetRequiredService<MessageSchedulingService>().ScheduleAllMessagesAsync(),
-        Cron.Minutely 
+        Cron.Minutely
     );
 }
-
-
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

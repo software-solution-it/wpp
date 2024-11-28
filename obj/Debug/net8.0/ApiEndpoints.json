@@ -7,17 +7,17 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [],
-    "ReturnTypes": [
-      {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[WhatsAppProject.Entities.MessageScheduling, WhatsAppProject, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.MessageSchedullingController",
+    "Method": "ExecuteSchedule",
+    "RelativePath": "api/MessageSchedulling/execute-schedule",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
   },
   {
     "ContainingType": "WhatsAppProject.Controllers.ContactController",
@@ -116,6 +116,27 @@
   },
   {
     "ContainingType": "WhatsAppProject.Controllers.ContactController",
+    "Method": "UpdateResponsible",
+    "RelativePath": "contact/{id}/responsible",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateResponsibleDto",
+        "Type": "WhatsAppProject.Dtos.UpdateResponsibleDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.ContactController",
     "Method": "GetContactsBySectorId",
     "RelativePath": "contact/sector/{sectorId}",
     "HttpMethod": "GET",
@@ -142,22 +163,23 @@
   },
   {
     "ContainingType": "WhatsAppProject.Controllers.TokenController",
-    "Method": "GenerateToken",
-    "RelativePath": "Token/generate-token",
+    "Method": "ValidateTokenAndPhoneId",
+    "RelativePath": "Token/validate",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WhatsAppProject.Controllers.TokenController",
-    "Method": "CheckAndRefreshToken",
-    "RelativePath": "Token/refresh-token",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "token",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "phoneId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -197,6 +219,22 @@
       {
         "Name": "body",
         "Type": "System.Text.Json.JsonElement",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WhatsAppProject.Controllers.WhatsAppController",
+    "Method": "MarkMessageAsReadViaWebSocket",
+    "RelativePath": "whatsapp/message-read",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "markMessageReadDto",
+        "Type": "WhatsAppProject.Dtos.MarkMessageReadDto",
         "IsRequired": true
       }
     ],

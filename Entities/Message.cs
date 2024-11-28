@@ -12,6 +12,9 @@ namespace WhatsAppProject.Entities
         [Column("id")] // Define o nome da coluna em snake_case
         public int Id { get; set; }
 
+        [Column("message_id", TypeName = "varchar(100)")] // Identificador único da mensagem
+        public string? MessageId { get; set; }
+
         [Column("conteudo")] // Define o nome da coluna em snake_case
         public string Content { get; set; } // Conteúdo da mensagem
 
@@ -35,6 +38,8 @@ namespace WhatsAppProject.Entities
         [Column("enviado")] // Indica se a mensagem foi enviada
         public bool IsSent { get; set; } = false; // Padrão é false
 
+        [Column("lida")] // Indica se a mensagem foi lida
+        public bool? IsRead { get; set; } = false; // Padrão é false
 
         [JsonIgnore]
         [ForeignKey("ContactID")]

@@ -1,4 +1,5 @@
 ﻿using MongoDB.Driver;
+using tests_.src.Domain.Entities;
 using WhatsAppProject.Entities;
 
 public class MongoDbContext
@@ -11,6 +12,6 @@ public class MongoDbContext
         _database = mongoClient.GetDatabase(databaseName);
     }
 
-    public IMongoCollection<FlowDTO> Flows => _database.GetCollection<FlowDTO>("flowsWhatsapp");
+    public IMongoCollection<FlowWhatsapp> Flows => _database.GetCollection<FlowWhatsapp>("flowsWhatsapp");
 
 }

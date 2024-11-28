@@ -78,6 +78,34 @@ namespace WhatsAppProject.Controllers
         }
 
         /// <summary>
+        /// Atualiza o responsável de um contato.
+        /// </summary>
+        [HttpPut("{id}/responsible")]
+        public async Task<IActionResult> UpdateResponsible(int id, [FromBody] UpdateResponsibleDto updateResponsibleDto)
+        {
+            // Verifica se o contato existe
+            var contact = await _contactService.GetContactByIdAsync(id);
+            if (contact == null)
+            {
+                return NotFound($"Contato com ID {id} não encontrado.");
+            }
+
+            contact.ResponsibleId = updateResponsibleDto.ResponsibleId;
+
+            try
+            {
+                await _contactService.UpdateContactAsync(contact);
+                return Ok($"Responsável do contato com ID {id} atualizado para {updateResponsibleDto.ResponsibleId}.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Erro ao atualizar o responsável: {ex.Message}");
+            }
+        }
+
+
+
+        /// <summary>
         /// Obtém mensagens por contact_id.
         /// </summary>
         [HttpGet("{contactId}/messages")] // Rota para buscar mensagens

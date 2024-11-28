@@ -29,4 +29,9 @@ namespace WhatsAppProject.Dtos
         public DateTime CreatedAt { get; set; } // Adicionado para data de criação
         public DateTime UpdatedAt { get; set; } // Adicionado para data da última atualização
     }
+
+    public class UpdateResponsibleDto
+    {
+        public int ResponsibleId { get; set; }
+    }
 }

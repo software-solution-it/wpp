@@ -27,7 +27,9 @@ namespace WhatsAppProject.Entities
         [Required]
         public int? SectorId { get; set; }
 
-        // Mudança de TagIds para uma lista de strings
+        [Column("responsavel_id")]
+        public int? ResponsibleId { get; set; }
+
         [Column("tag_id")]
         public string? TagIds { get; set; }
 
@@ -48,6 +50,10 @@ namespace WhatsAppProject.Entities
 
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("is_viewed")]
+        [Required]
+        public bool IsViewed { get; set; } = false;
 
         [JsonIgnore]
         public virtual ICollection<Messages> Messages { get; set; } = new List<Messages>();

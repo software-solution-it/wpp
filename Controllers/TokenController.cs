@@ -14,8 +14,6 @@ namespace WhatsAppProject.Controllers
     {
         private readonly ILogger<TokenController> _logger;
         private readonly IHttpClientFactory _clientFactory;
-        private string _accessToken;
-        private DateTime _expirationTime;
 
         public TokenController(ILogger<TokenController> logger, IHttpClientFactory clientFactory)
         {
@@ -23,72 +21,51 @@ namespace WhatsAppProject.Controllers
             _clientFactory = clientFactory;
         }
 
-        [HttpGet("generate-token")]
-        public async Task<IActionResult> GenerateToken()
+        [HttpGet("validate")]
+        public async Task<IActionResult> ValidateTokenAndPhoneId([FromQuery] string token, [FromQuery] string phoneId)
         {
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(phoneId))
+            {
+                return BadRequest(new { message = "Token ou phone_id estão ausentes." });
+            }
+
+            var requestUri = $"https://graph.facebook.com/v17.0/{phoneId}?fields=id&access_token={token}";
+            var client = _clientFactory.CreateClient();
+
             try
             {
-                var client = _clientFactory.CreateClient();
-                var appId = "YOUR_APP_ID";
-                var appSecret = "YOUR_APP_SECRET";
-                var shortLivedToken = "YOUR_SHORT_LIVED_TOKEN"; // Gera um token usando o Graph Explorer
-
-                // Solicita um novo token de longa duração
-                var response = await client.GetAsync(
-                    $"https://graph.facebook.com/v13.0/oauth/access_token" +
-                    $"?grant_type=fb_exchange_token&client_id={appId}&client_secret={appSecret}&fb_exchange_token={shortLivedToken}");
+                var response = await client.GetAsync(requestUri);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var jsonResponse = await response.Content.ReadAsStringAsync();
-                    var tokenInfo = JsonSerializer.Deserialize<TokenResponse>(jsonResponse);
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    var jsonResponse = JsonSerializer.Deserialize<MetaValidationResponse>(responseBody);
 
-                    _accessToken = tokenInfo.AccessToken;
-                    _expirationTime = DateTime.UtcNow.AddSeconds(tokenInfo.ExpiresIn);
+                    if (jsonResponse != null && jsonResponse.Id == phoneId)
+                    {
+                        return Ok(new { message = "Token e phone_id são válidos." });
+                    }
 
-                    // Salva no banco de dados ou em cache, conforme sua necessidade
-                    SaveTokenToDatabase(_accessToken, _expirationTime);
-
-                    return Ok(new { token = _accessToken, expires_in = tokenInfo.ExpiresIn });
+                    return BadRequest(new { message = "Token ou phone_id são inválidos." });
                 }
                 else
                 {
-                    _logger.LogError("Erro ao gerar token: {0}", response.ReasonPhrase);
-                    return StatusCode(500, "Erro ao gerar token.");
+                    var errorResponse = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Erro na validação do token: {Error}", errorResponse);
+                    return BadRequest(new { message = "Erro ao validar token e phone_id.", details = errorResponse });
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Erro ao gerar token: {0}", ex.Message);
-                return StatusCode(500, "Erro ao gerar token.");
+                _logger.LogError(ex, "Erro ao validar o token ou phone_id.");
+                return StatusCode(500, new { message = "Erro interno ao validar o token." });
             }
         }
 
-        [HttpGet("refresh-token")]
-        public IActionResult CheckAndRefreshToken()
+        private class MetaValidationResponse
         {
-            if (DateTime.UtcNow.AddMinutes(10) >= _expirationTime)
-            {
-                // Regenerar token antes que expire
-                _logger.LogInformation("Token está prestes a expirar. Gerando novo token...");
-                return RedirectToAction("GenerateToken");
-            }
-
-            return Ok(new { message = "Token ainda é válido.", expires_at = _expirationTime });
-        }
-
-        private void SaveTokenToDatabase(string token, DateTime expirationTime)
-        {
-            // Implementar lógica para salvar token no banco de dados
-        }
-
-        private class TokenResponse
-        {
-            [JsonPropertyName("access_token")]
-            public string AccessToken { get; set; }
-
-            [JsonPropertyName("expires_in")]
-            public int ExpiresIn { get; set; }
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
         }
     }
 }

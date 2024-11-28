@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using WhatsAppProject.Entities;
+using System.Threading.Tasks;
 using WhatsAppProject.Services;
 
 namespace WhatsAppProject.Controllers
@@ -16,11 +15,27 @@ namespace WhatsAppProject.Controllers
             _messageSchedulingService = messageSchedulingService;
         }
 
+        // Endpoint para listar todos os agendamentos de mensagens
         [HttpGet]
-        public ActionResult<IEnumerable<MessageScheduling>> GetAll()
+        public IActionResult GetAll()
         {
             var result = _messageSchedulingService.GetAllMessageSchedulings();
             return Ok(result);
+        }
+
+        // Novo endpoint para executar o job de agendamento de mensagens
+        [HttpPost("execute-schedule")]
+        public async Task<IActionResult> ExecuteSchedule()
+        {
+            try
+            {
+                await _messageSchedulingService.ScheduleAllMessagesAsync();
+                return Ok("Job de agendamento de mensagens executado com sucesso.");
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(500, $"Erro ao executar o job: {ex.Message}");
+            }
         }
     }
 }

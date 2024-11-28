@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using WhatsAppProject.Dtos;
 using MongoDB.Driver;
 using WhatsAppProject.Entities.WhatsAppProject.Entities;
 using MongoDB.Bson;
+using tests_.src.Domain.Entities;
 
 namespace WhatsAppProject.Services
 {
@@ -18,19 +20,22 @@ namespace WhatsAppProject.Services
         private readonly MongoDbContext _mongoDbContext;
         private readonly ContactService _contactService;
         private readonly WhatsAppService _whatsappService;
-        private readonly WebhookService _webhookService; // Adiciona o WebhookService
+        private readonly WebhookService _webhookService;
+        private readonly IMongoCollection<FlowWhatsapp> _flowsWhatsapp;
 
         public MessageSchedulingService(SaasDbContext context,
                                         MongoDbContext mongoDbContext,
                                         ContactService contactService,
                                         WhatsAppService whatsappService,
-                                        WebhookService webhookService) // Adiciona WebhookService no construtor
+                                        WebhookService webhookService
+                                        ) 
         {
             _saasContext = context;
             _mongoDbContext = mongoDbContext;
             _contactService = contactService;
             _whatsappService = whatsappService;
-            _webhookService = webhookService; // Inicializa o WebhookService
+            _flowsWhatsapp = mongoDbContext.Flows;
+            _webhookService = webhookService;
         }
 
         public async Task ScheduleAllMessagesAsync()
@@ -87,9 +92,11 @@ namespace WhatsAppProject.Services
 
         public async Task EnqueueMessageForFluxAsync(MessageScheduling message, Contacts contact)
         {
+            // Verifica o status do fluxo para o contato
             var contactFlowStatus = _saasContext.ContactFlowStatus
                 .FirstOrDefault(status => status.ContactId == contact.Id && status.FlowId == message.FlowId);
 
+            // Se não houver status, cria um novo
             if (contactFlowStatus == null)
             {
                 contactFlowStatus = new ContactFlowStatus
@@ -99,52 +106,60 @@ namespace WhatsAppProject.Services
                     CurrentNodeId = "",
                     IsFlowComplete = false
                 };
+
                 _saasContext.ContactFlowStatus.Add(contactFlowStatus);
                 _saasContext.SaveChanges();
             }
 
+            // Verifica se o fluxo não está completo
             if (!contactFlowStatus.IsFlowComplete)
             {
                 try
                 {
                     var flowIdString = message.FlowId;
-                    var flow = await _mongoDbContext.Flows
-                        .Find(Builders<FlowDTO>.Filter.Eq(f => f.Id, flowIdString))
+
+                    // Valida o formato do FlowId
+                    if (!ObjectId.TryParse(flowIdString, out var objectId))
+                    {
+                        Console.WriteLine($"ID inválido: {flowIdString}");
+                        return;
+                    }
+
+                    // Busca o fluxo no MongoDB
+                    var flow = await _flowsWhatsapp
+                        .Find(flow => flow.Id == objectId.ToString())
                         .FirstOrDefaultAsync();
 
-                    if (flow != null)
+                    if (flow == null)
                     {
-                        if (string.IsNullOrEmpty(contactFlowStatus.CurrentNodeId))
-                        {
-                            var firstNode = flow.Nodes.FirstOrDefault();
-                            if (firstNode != null)
-                            {
-                                contactFlowStatus.CurrentNodeId = firstNode.Id;
-                                _saasContext.ContactFlowStatus.Update(contactFlowStatus);
-                                _saasContext.SaveChanges();
-                            }
-                        }
-                        else
-                        {
-                            var currentNode = flow.Nodes.FirstOrDefault(node => node.Id == contactFlowStatus.CurrentNodeId);
+                        Console.WriteLine($"Nenhum fluxo encontrado com o ID: {flowIdString}");
+                        return;
+                    }
 
-                            if (currentNode != null)
-                            {
-                                var messageDto = new MessageDto
-                                {
-                                    Content = currentNode.Blocks.FirstOrDefault()?.Content ?? string.Empty,
-                                    Recipient = contact.PhoneNumber,
-                                    ContactId = contact.Id
-                                };
+                    // Se o fluxo foi encontrado
+                    Console.WriteLine($"Fluxo encontrado: {flow.Name}");
 
-                                await _whatsappService.SendMessageAsync(messageDto);
-                                WaitForUserResponse(contact, flow, contactFlowStatus);
-                            }
+                    // Define o primeiro nó, se necessário
+                    if (string.IsNullOrEmpty(contactFlowStatus.CurrentNodeId))
+                    {
+                        var firstNode = flow.Nodes.FirstOrDefault();
+                        if (firstNode != null)
+                        {
+                            contactFlowStatus.CurrentNodeId = firstNode.Id;
+                            _saasContext.ContactFlowStatus.Update(contactFlowStatus);
+                            _saasContext.SaveChanges();
                         }
+                    }
+
+                    // Obtém o nó atual do fluxo
+                    var currentNode = flow.Nodes.FirstOrDefault(node => node.Id == contactFlowStatus.CurrentNodeId);
+                    if (currentNode != null)
+                    {
+                        await ProcessNodeAsync(flow, currentNode, contact, contactFlowStatus);
                     }
                     else
                     {
-                        Console.WriteLine($"Fluxo não encontrado com ID: {message.FlowId}");
+                        Console.WriteLine($"Nó atual não encontrado para ID: {contactFlowStatus.CurrentNodeId}");
                     }
                 }
                 catch (FormatException ex)
@@ -153,49 +168,103 @@ namespace WhatsAppProject.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Erro ao buscar o fluxo: {ex.Message}");
+                    Console.WriteLine($"Erro inesperado ao processar o fluxo: {ex.Message}");
                 }
             }
         }
 
-        private void WaitForUserResponse(Contacts contact, FlowDTO flow, ContactFlowStatus contactFlowStatus)
+
+        private async Task ProcessNodeAsync(FlowWhatsapp flow, NodeDTO currentNode, Contacts contact, ContactFlowStatus contactFlowStatus)
         {
-            var currentNodeIndex = flow.Nodes.FindIndex(node => node.Id == contactFlowStatus.CurrentNodeId);
-
-            if (string.IsNullOrEmpty(contactFlowStatus.CurrentNodeId))
+            // Processa o nó atual
+            if (currentNode.Blocks != null && currentNode.Blocks.Count > 0)
             {
-                currentNodeIndex = 0;
-            }
-            else
-            {
-                currentNodeIndex += 1;
-            }
-
-            if (currentNodeIndex >= 0 && currentNodeIndex < flow.Nodes.Count)
-            {
-                var nextNode = flow.Nodes[currentNodeIndex];
-                contactFlowStatus.CurrentNodeId = nextNode.Id;
-                contactFlowStatus.UpdatedAt = DateTime.UtcNow;
-                _saasContext.ContactFlowStatus.Update(contactFlowStatus);
-                _saasContext.SaveChanges();
-
                 var messageDto = new MessageDto
                 {
-                    Content = nextNode.Blocks.FirstOrDefault()?.Content ?? string.Empty,
+                    Content = currentNode.Blocks.FirstOrDefault()?.Content ?? string.Empty,
                     Recipient = contact.PhoneNumber,
                     ContactId = contact.Id
                 };
 
-                _whatsappService.SendMessageAsync(messageDto).Wait();
+                await _whatsappService.SendMessageAsync(messageDto);
             }
-            else if (currentNodeIndex >= flow.Nodes.Count)
+
+            // Avalia as condições do nó
+            if (currentNode.Condition != null && !string.IsNullOrEmpty(currentNode.Condition.Condition))
             {
-                contactFlowStatus.IsFlowComplete = true;
+                bool conditionMet = EvaluateCondition(currentNode.Condition, contact);
+                var nextEdge = flow.Edges.FirstOrDefault(edge =>
+                    edge.Source == currentNode.Id &&
+                    ((conditionMet && edge.SourceHandle == "true") || (!conditionMet && edge.SourceHandle == "false")));
+
+                if (nextEdge != null)
+                {
+                    MoveToNextNode(flow, nextEdge.Target, contactFlowStatus);
+                }
+            }
+            else
+            {
+
+                var nextEdge = flow.Edges.FirstOrDefault(edge => edge.Source == currentNode.Id);
+                if (nextEdge != null)
+                {
+                    MoveToNextNode(flow, nextEdge.Target, contactFlowStatus);
+                }
+                else
+                {
+
+                    contactFlowStatus.IsFlowComplete = true;
+                    contactFlowStatus.UpdatedAt = DateTime.UtcNow;
+                    _saasContext.ContactFlowStatus.Update(contactFlowStatus);
+                    _saasContext.SaveChanges();
+
+                    Console.WriteLine($"Fluxo concluído para contato {contact.Id}");
+                }
+            }
+        }
+
+        private bool EvaluateCondition(ConditionDTO condition, Contacts contact)
+        {
+            // Avaliação da condição simples baseada na lógica fornecida
+            switch (condition.Condition.ToLower())
+            {
+                case "contém":
+                    return contact.Name.Contains(condition.Value, StringComparison.OrdinalIgnoreCase);
+                case "igual":
+                    return contact.Name.Equals(condition.Value, StringComparison.OrdinalIgnoreCase);
+                case "diferente":
+                    return !contact.Name.Equals(condition.Value, StringComparison.OrdinalIgnoreCase);
+                default:
+                    Console.WriteLine($"Condição desconhecida: {condition.Condition}");
+                    return false;
+            }
+        }
+
+        private void MoveToNextNode(FlowWhatsapp flow, string nextNodeId, ContactFlowStatus contactFlowStatus)
+        {
+            if (string.IsNullOrEmpty(nextNodeId))
+            {
+                Console.WriteLine($"ID inválido ou vazio: {nextNodeId}");
+                return;
+            }
+
+            // Procura o próximo nó no fluxo
+            var nextNode = flow.Nodes.FirstOrDefault(node => node.Id == nextNodeId);
+
+            if (nextNode != null)
+            {
+                // Atualiza o estado atual do contato para o próximo nó
+                contactFlowStatus.CurrentNodeId = nextNode.Id;
                 contactFlowStatus.UpdatedAt = DateTime.UtcNow;
+
                 _saasContext.ContactFlowStatus.Update(contactFlowStatus);
                 _saasContext.SaveChanges();
 
-                Console.WriteLine($"Fluxo concluído para contato {contact.Id}");
+                Console.WriteLine($"Movendo para o próximo nó: {nextNode.Id}");
+            }
+            else
+            {
+                Console.WriteLine($"Erro: Nó com ID {nextNodeId} não encontrado no fluxo.");
             }
         }
 

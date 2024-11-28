@@ -1,153 +1,164 @@
-﻿using System;
-using System.Collections.Generic;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-
-namespace WhatsAppProject.Entities
+﻿namespace tests_.src.Domain.Entities
 {
-    public class FlowDTO
+    using MongoDB.Bson;
+    using MongoDB.Bson.Serialization.Attributes;
+    using System.Collections.Generic;
+
+    public class FlowWhatsapp
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [BsonElement("flowIn")]
-        public string FlowIn { get; set; } // Campo adicionado conforme necessário
+        public string? FlowIn { get; set; }
 
         [BsonElement("name")]
-        public string Name { get; set; } // Nome do flow
+        public string? Name { get; set; }
 
         [BsonElement("description")]
-        public string Description { get; set; } // Descrição do flow
+        public string? Description { get; set; }
 
         [BsonElement("sectorId")]
-        public int SectorId { get; set; } // ID do setor associado ao flow
+        public int? SectorId { get; set; }
 
         [BsonElement("nodes")]
-        public List<NodeDTO> Nodes { get; set; } // Lista de nós
+        public List<NodeDTO>? Nodes { get; set; }
 
         [BsonElement("edges")]
-        public List<EdgeDTO> Edges { get; set; } // Lista de arestas
+        public List<EdgeDTO>? Edges { get; set; }
     }
 
     public class NodeDTO
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } // Identificador único do nó no MongoDB
+        public string? Id { get; set; }
 
         [BsonElement("label")]
-        public string Label { get; set; } // Rótulo do nó
+        public string? Label { get; set; }
 
         [BsonElement("type")]
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         [BsonElement("blocks")]
-        public List<BlockDTO> Blocks { get; set; } // Lista de blocos
+        public List<BlockDTO>? Blocks { get; set; }
 
+        // Alterado para aceitar um único objeto em vez de uma lista
         [BsonElement("menuOptions")]
-        public List<MenuOptionDTO> MenuOptions { get; set; } // Lista de opções de menu
+        public MenuOptionDTO? MenuOptions { get; set; }
 
         [BsonElement("selectedTag")]
-        public TagDTO? SelectedTag { get; set; } // Tag selecionada, se houver
+        public TagDTO? SelectedTag { get; set; }
 
         [BsonElement("condition")]
-        public ConditionDTO? Condition { get; set; } // Condição associada ao nó, se houver
+        public ConditionDTO? Condition { get; set; }
+
+        // Adicionando o campo Position
+        [BsonElement("position")]
+        public PositionDTO? Position { get; set; }
+    }
+
+    public class PositionDTO
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+
+        [BsonElement("x")]
+        public double? X { get; set; }
+
+        [BsonElement("y")]
+        public double? Y { get; set; }
     }
 
     public class BlockDTO
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } // Identificador único do bloco no MongoDB
+        public string? Id { get; set; }
 
         [BsonElement("type")]
-        public string Type { get; set; } // Tipo de bloco
+        public string? Type { get; set; }
 
         [BsonElement("content")]
-        public string Content { get; set; } // Conteúdo do bloco
+        public string? Content { get; set; }
 
         [BsonElement("media")]
-        public MediaDTO? Media { get; set; } // Mídia associada ao bloco, se houver
+        public MediaDTO? Media { get; set; }
 
         [BsonElement("duration")]
-        public int? Duration { get; set; } // Duração do bloco, se aplicável
+        public int? Duration { get; set; }
     }
 
     public class MenuOptionDTO
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } // Identificador único da opção de menu no MongoDB
+        public string? Id { get; set; }
 
         [BsonElement("title")]
-        public string Title { get; set; } // Título da opção de menu
+        public string? Title { get; set; }
 
         [BsonElement("content")]
-        public List<string> Content { get; set; } // Conteúdo da opção de menu
+        public List<string>? Content { get; set; }
     }
 
     public class TagDTO
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } // Identificador único da tag no MongoDB
+        public string? Id { get; set; }
 
         [BsonElement("tagId")]
-        public int TagId { get; set; } // ID da tag
+        public int? TagId { get; set; }
     }
 
     public class ConditionDTO
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } // Identificador único da condição no MongoDB
+        public string? Id { get; set; }
 
         [BsonElement("variableId")]
-        public int VariableId { get; set; } // ID da variável associada à condição
+        public int? VariableId { get; set; }
 
         [BsonElement("condition")]
-        public string Condition { get; set; } // Condição a ser avaliada
+        public string? Condition { get; set; }
 
         [BsonElement("value")]
-        public string Value { get; set; } // Valor a ser comparado
+        public string? Value { get; set; }
     }
 
     public class MediaDTO
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } // Identificador único da mídia no MongoDB
+        public string? Id { get; set; }
 
         [BsonElement("name")]
-        public string Name { get; set; } // Nome da mídia
+        public string? Name { get; set; }
 
         [BsonElement("mimeType")]
-        public string MimeType { get; set; } // Tipo MIME da mídia
+        public string? MimeType { get; set; }
 
         [BsonElement("base64")]
-        public string Base64 { get; set; } // Representação Base64 da mídia
+        public string? Base64 { get; set; }
     }
 
     public class EdgeDTO
     {
         [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; } // Identificador único da aresta no MongoDB
+        public string? Id { get; set; }
 
         [BsonElement("source")]
-        public string Source { get; set; } // ID do nó de origem
+        public string? Source { get; set; }
 
         [BsonElement("target")]
-        public string Target { get; set; } // ID do nó de destino
+        public string? Target { get; set; }
 
         [BsonElement("animated")]
-        public bool Animated { get; set; } // Indica se a aresta é animada
+        public bool? Animated { get; set; }
 
         [BsonElement("sourceHandle")]
-        public string? SourceHandle { get; set; } // Identificador do manipulador de origem, se houver
+        public string? SourceHandle { get; set; }
 
         [BsonElement("targetHandle")]
-        public string? TargetHandle { get; set; } // Identificador do manipulador de destino, se houver
+        public string? TargetHandle { get; set; }
     }
 }

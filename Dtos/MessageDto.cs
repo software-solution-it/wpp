@@ -1,4 +1,6 @@
-﻿namespace WhatsAppProject.Dtos
+﻿using System.Text.Json.Serialization;
+
+namespace WhatsAppProject.Dtos
 {
     public class MessageDto
     {
@@ -15,6 +17,14 @@
         public int ContactId { get; set; } // ID do contato associado à mensagem
     }
 
+
+    public class MarkMessageReadDto
+    {
+        public int MessageId { get; set; } // ID da mensagem a ser marcada como lida
+        public string SectorId { get; set; } // ID do setor relacionado
+    }
+
+
     public class MessageReceivedDto
     {
         public int Id { get; set; }
@@ -26,6 +36,15 @@
         public bool IsSent { get; set; }
     }
 
+    public class MessageReadDto
+    {
+        [JsonPropertyName("id")]
+        public int MessageId { get; set; }
+
+        [JsonPropertyName("isRead")]
+        public bool IsRead { get; set; }
+    }
+
 
     public class UpdateCredentialsDto
     {
@@ -34,3 +53,4 @@
         public int SectorId { get; set; } // ID do setor associado às credenciais
     }
 }
+
