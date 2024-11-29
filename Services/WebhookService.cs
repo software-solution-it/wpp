@@ -190,6 +190,18 @@ namespace WhatsAppProject.Services
                 }));
             }
 
+            var contactFlowStatus = await _saasContext.ContactFlowStatus
+                .FirstOrDefaultAsync(status => status.ContactId == contactId && !status.IsFlowComplete);
+
+            if (contactFlowStatus != null)
+            {
+                contactFlowStatus.IsAwaitingUserResponse = false;
+                contactFlowStatus.UpdatedAt = DateTime.UtcNow;
+
+                _saasContext.ContactFlowStatus.Update(contactFlowStatus);
+                _logger.LogInformation($"Status do fluxo atualizado para o contato {contactId}. Aguardando próximo passo.");
+            }
+
             await _context.SaveChangesAsync();
 
             await _webSocketManager.SendMessageToSectorAsync(credentials.Id.ToString(), System.Text.Json.JsonSerializer.Serialize(new
@@ -204,6 +216,7 @@ namespace WhatsAppProject.Services
                 SentAt = newMessage.SentAt
             }));
         }
+
 
 
 

@@ -68,10 +68,21 @@ namespace WhatsAppProject.Services
             var response = await _httpClient.PostAsync($"https://graph.facebook.com/v20.0/{credentials.PhoneNumberId}/messages", content);
             response.EnsureSuccessStatusCode();
 
-            // Salva as mudanças no banco de dados, garantindo que o ID foi gerado
             await _context.SaveChangesAsync();
 
-            // Obtém o ID gerado para a mensagem
+            var contactFlowStatus = await _saasContext.ContactFlowStatus
+                .FirstOrDefaultAsync(status => status.ContactId == messageDto.ContactId && !status.IsFlowComplete);
+
+            if (contactFlowStatus != null)
+            {
+                contactFlowStatus.IsAwaitingUserResponse = true;
+                contactFlowStatus.UpdatedAt = DateTime.UtcNow;
+
+                _saasContext.ContactFlowStatus.Update(contactFlowStatus);
+            }
+
+            await _context.SaveChangesAsync();
+
             var messageId = message.Id;
 
             var messageJson = JsonSerializer.Serialize(new
@@ -84,9 +95,9 @@ namespace WhatsAppProject.Services
                 ContactID = messageDto.ContactId
             });
 
-            // Envia a mensagem via WebSocket
             await _webSocketManager.SendMessageToSectorAsync(messageDto.SectorId.ToString(), messageJson);
         }
+
 
 
 
@@ -105,6 +116,74 @@ namespace WhatsAppProject.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+
+        public async Task SendInteractiveMenuAsync(InteractiveMenuDto menuDto)
+        {
+
+            var payload = new
+            {
+                messaging_product = "whatsapp",
+                recipient_type = "individual",
+                to = menuDto.Recipient,
+                type = "interactive",
+                interactive = new
+                {
+                    type = "list",
+                    header = new
+                    {
+                        type = "text",
+                        text = menuDto.Header
+                    },
+                    body = new
+                    {
+                        text = "Por favor, selecione uma das opções abaixo:" 
+                    },
+                    action = new
+                    {
+                        button = "Escolher", 
+                        sections = new[]
+                        {
+                    new
+                    {
+                        title = "Opções Disponíveis",
+                        rows = menuDto.Options.Select(option => new
+                        {
+                            id = option.Value,
+                            title = option.Title, 
+                            description = option.Description 
+                        }).ToList()
+                    }
+                }
+                    }
+                }
+            };
+
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var credentials = await GetWhatsAppCredentialsBySectorIdAsync(menuDto.SectorId);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
+
+            var whatsappBaseUrl = _configuration["WhatsApp:BaseUrl"];
+            var response = await _httpClient.PostAsync($"{whatsappBaseUrl}/{credentials.PhoneNumberId}/messages", content);
+
+            response.EnsureSuccessStatusCode();
+
+            var message = new Messages
+            {
+                Content = menuDto.Header,
+                MediaType = "interactive",
+                MediaUrl = null,
+                SectorId = menuDto.SectorId,
+                SentAt = DateTime.UtcNow,
+                IsSent = true,
+                ContactID = menuDto.ContactId
+            };
+            await _context.Messages.AddAsync(message);
+            await _context.SaveChangesAsync();
+        }
+
 
         public async Task<string> UploadMediaToS3Async(string base64File, string mediaType, string originalFileName)
         {
@@ -130,7 +209,7 @@ namespace WhatsAppProject.Services
                         Key = Path.GetFileName(tempInputPath),
                         InputStream = new FileStream(tempInputPath, FileMode.Open, FileAccess.Read),
                         ContentType = mediaType,
-                        CannedACL = S3CannedACL.PublicRead // Define o arquivo como público, se necessário
+                        CannedACL = S3CannedACL.PublicRead
                     };
 
                     await transferUtility.UploadAsync(fileTransferRequest);
@@ -147,7 +226,6 @@ namespace WhatsAppProject.Services
                 }
                 finally
                 {
-                    // Assegura que o arquivo temporário seja deletado
                     File.Delete(tempInputPath);
                 }
 

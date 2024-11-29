@@ -73,8 +73,10 @@ builder.Services.AddHangfire(config =>
 
 builder.Services.AddHangfireServer(options =>
 {
-    options.WorkerCount = 1;
+    options.WorkerCount = 1; // Define o número de workers ativos
+    options.Queues = new[] { "default" }; // Define a fila padrão
 });
+
 
 builder.Services.AddSingleton<IRecurringJobManager, RecurringJobManager>();
 builder.Services.AddSingleton<IBackgroundJobClient, BackgroundJobClient>();
@@ -173,12 +175,14 @@ app.UseSwaggerUI(c =>
 using (var scope = app.Services.CreateScope())
 {
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
     recurringJobManager.AddOrUpdate(
-        "CheckNewSchedules",
+        "ContinuousWorker",
         () => scope.ServiceProvider.GetRequiredService<MessageSchedulingService>().ScheduleAllMessagesAsync(),
-        Cron.Minutely
+        Cron.Minutely // Configura para rodar a cada minuto
     );
 }
+
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

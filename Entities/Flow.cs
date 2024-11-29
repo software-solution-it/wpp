@@ -87,7 +87,7 @@
         public MediaDTO? Media { get; set; }
 
         [BsonElement("duration")]
-        public int? Duration { get; set; }
+        public int Duration { get; set; }
     }
 
     public class MenuOptionDTO

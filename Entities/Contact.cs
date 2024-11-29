@@ -25,7 +25,7 @@ namespace WhatsAppProject.Entities
 
         [Column("setor_id")]
         [Required]
-        public int? SectorId { get; set; }
+        public int SectorId { get; set; }
 
         [Column("responsavel_id")]
         public int? ResponsibleId { get; set; }

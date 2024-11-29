@@ -11,6 +11,7 @@ using MongoDB.Driver;
 using WhatsAppProject.Entities.WhatsAppProject.Entities;
 using MongoDB.Bson;
 using tests_.src.Domain.Entities;
+using System.Diagnostics.Eventing.Reader;
 
 namespace WhatsAppProject.Services
 {
@@ -28,7 +29,7 @@ namespace WhatsAppProject.Services
                                         ContactService contactService,
                                         WhatsAppService whatsappService,
                                         WebhookService webhookService
-                                        ) 
+                                        )
         {
             _saasContext = context;
             _mongoDbContext = mongoDbContext;
@@ -36,6 +37,27 @@ namespace WhatsAppProject.Services
             _whatsappService = whatsappService;
             _flowsWhatsapp = mongoDbContext.Flows;
             _webhookService = webhookService;
+        }
+
+
+        public async Task ContinuousExecutionAsync()
+        {
+            Console.WriteLine("Worker iniciado. Executando continuamente...");
+
+            while (true)
+            {
+                try
+                {
+                    await ScheduleAllMessagesAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erro na execução do worker: {ex.Message}");
+                }
+
+                // Aguarda alguns segundos antes de reiniciar (configurável)
+                await Task.Delay(TimeSpan.FromSeconds(3)); // Configura o intervalo entre execuções
+            }
         }
 
         public async Task ScheduleAllMessagesAsync()
@@ -61,6 +83,7 @@ namespace WhatsAppProject.Services
                     }
                 }
             }
+            BackgroundJob.Schedule(() => ScheduleAllMessagesAsync(), TimeSpan.FromSeconds(5));
         }
 
         public List<MessageScheduling> GetAllMessageSchedulings()
@@ -176,20 +199,75 @@ namespace WhatsAppProject.Services
 
         private async Task ProcessNodeAsync(FlowWhatsapp flow, NodeDTO currentNode, Contacts contact, ContactFlowStatus contactFlowStatus)
         {
-            // Processa o nó atual
-            if (currentNode.Blocks != null && currentNode.Blocks.Count > 0)
+            if (contactFlowStatus.IsAwaitingUserResponse)
             {
-                var messageDto = new MessageDto
-                {
-                    Content = currentNode.Blocks.FirstOrDefault()?.Content ?? string.Empty,
-                    Recipient = contact.PhoneNumber,
-                    ContactId = contact.Id
-                };
-
-                await _whatsappService.SendMessageAsync(messageDto);
+                Console.WriteLine($"Aguardando resposta do contato {contact.Id} no nó {currentNode.Id}. Nenhuma ação será realizada até o contato responder.");
+                return;
             }
 
-            // Avalia as condições do nó
+            if (currentNode.Blocks != null && currentNode.Blocks.Count > 0)
+            {
+                foreach (var block in currentNode.Blocks)
+                {
+                    switch (block.Type)
+                    {
+                        case "text":
+                            var messageDto = new MessageDto
+                            {
+                                Content = block.Content,
+                                Recipient = contact.PhoneNumber,
+                                ContactId = contact.Id,
+                                SectorId = contact.SectorId
+                            };
+                            await _whatsappService.SendMessageAsync(messageDto);
+                            break;
+
+                        case "image":
+                        case "attachment":
+                            var base64Content = block.Media.Base64.Contains(",")
+                                ? block.Media.Base64.Split(',')[1]
+                                : block.Media.Base64;
+
+                            var sendFileDto = new SendFileDto
+                            {
+                                Base64File = base64Content,
+                                MediaType = block.Media.MimeType,
+                                FileName = block.Media.Name,
+                                Caption = block.Content,
+                                Recipient = contact.PhoneNumber,
+                                SectorId = contact.SectorId,
+                                ContactId = contact.Id
+                            };
+                            await _whatsappService.SendMediaAsync(sendFileDto);
+                            break;
+
+                        case "timer":
+                            var delayInMilliseconds = block.Duration * 1000;
+                            await Task.Delay(delayInMilliseconds);
+                            break;
+                    }
+                }
+            }
+
+            if (currentNode.MenuOptions != null && currentNode.MenuOptions.Content.Count > 0)
+            {
+                var menuDto = new InteractiveMenuDto
+                {
+                    Recipient = contact.PhoneNumber,
+                    ContactId = contact.Id,
+                    SectorId = contact.SectorId,
+                    Header = currentNode.MenuOptions.Title,
+                    Options = currentNode.MenuOptions.Content.Select(option => new MenuOptionDto
+                    {
+                        Title = option,
+                        Description = string.Empty,
+                        Value = option
+                    }).ToList()
+                };
+
+                await _whatsappService.SendInteractiveMenuAsync(menuDto);
+            }
+
             if (currentNode.Condition != null && !string.IsNullOrEmpty(currentNode.Condition.Condition))
             {
                 bool conditionMet = EvaluateCondition(currentNode.Condition, contact);
@@ -221,14 +299,23 @@ namespace WhatsAppProject.Services
                     Console.WriteLine($"Fluxo concluído para contato {contact.Id}");
                 }
             }
+
+            // Marca o estado como aguardando resposta do usuário
+            contactFlowStatus.IsAwaitingUserResponse = true;
+            contactFlowStatus.UpdatedAt = DateTime.UtcNow;
+            _saasContext.ContactFlowStatus.Update(contactFlowStatus);
+            await _saasContext.SaveChangesAsync();
+
+            Console.WriteLine($"Fluxo pausado no nó {currentNode.Id} para contato {contact.Id}. Aguardando resposta do usuário.");
         }
+
 
         private bool EvaluateCondition(ConditionDTO condition, Contacts contact)
         {
             // Avaliação da condição simples baseada na lógica fornecida
             switch (condition.Condition.ToLower())
             {
-                case "contém":
+                case "contem":
                     return contact.Name.Contains(condition.Value, StringComparison.OrdinalIgnoreCase);
                 case "igual":
                     return contact.Name.Equals(condition.Value, StringComparison.OrdinalIgnoreCase);

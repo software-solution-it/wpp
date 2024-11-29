@@ -16,7 +16,7 @@ namespace WhatsAppProject.Dtos
         public string PhoneNumber { get; set; }
 
         public string? ProfilePictureUrl { get; set; }
-        public int? SectorId { get; set; }
+        public int SectorId { get; set; }
 
         // Mudança de TagIds para uma lista de strings
         public string? TagIds { get; set; }
