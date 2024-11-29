@@ -39,26 +39,7 @@ namespace WhatsAppProject.Services
             _webhookService = webhookService;
         }
 
-
-        public async Task ContinuousExecutionAsync()
-        {
-            Console.WriteLine("Worker iniciado. Executando continuamente...");
-
-            while (true)
-            {
-                try
-                {
-                    await ScheduleAllMessagesAsync();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Erro na execução do worker: {ex.Message}");
-                }
-
-                // Aguarda alguns segundos antes de reiniciar (configurável)
-                await Task.Delay(TimeSpan.FromSeconds(3)); // Configura o intervalo entre execuções
-            }
-        }
+        
 
         public async Task ScheduleAllMessagesAsync()
         {
@@ -83,7 +64,7 @@ namespace WhatsAppProject.Services
                     }
                 }
             }
-            BackgroundJob.Schedule(() => ScheduleAllMessagesAsync(), TimeSpan.FromSeconds(5));
+            
         }
 
         public List<MessageScheduling> GetAllMessageSchedulings()
@@ -203,6 +184,10 @@ namespace WhatsAppProject.Services
             {
                 Console.WriteLine($"Aguardando resposta do contato {contact.Id} no nó {currentNode.Id}. Nenhuma ação será realizada até o contato responder.");
                 return;
+            }
+            else
+            {
+                BackgroundJob.Schedule(() => ScheduleAllMessagesAsync(), TimeSpan.FromSeconds(1));
             }
 
             if (currentNode.Blocks != null && currentNode.Blocks.Count > 0)
