@@ -79,6 +79,7 @@ namespace WhatsAppProject.Services
                 contactFlowStatus.UpdatedAt = DateTime.UtcNow;
 
                 _saasContext.ContactFlowStatus.Update(contactFlowStatus);
+                _saasContext.SaveChangesAsync();
             }
 
             await _context.SaveChangesAsync();

@@ -199,6 +199,7 @@ namespace WhatsAppProject.Services
                 contactFlowStatus.UpdatedAt = DateTime.UtcNow;
 
                 _saasContext.ContactFlowStatus.Update(contactFlowStatus);
+                await _saasContext.SaveChangesAsync();
                 _logger.LogInformation($"Status do fluxo atualizado para o contato {contactId}. Aguardando próximo passo.");
             }
 
